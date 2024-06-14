@@ -1,3 +1,7 @@
+// This code only outputs the dimension of the image and
+// the dimension of the kernel. To find an explicit basis,
+// consider this source https://codeforces.com/blog/entry/98376
+
 #include <bits/stdc++.h>
  
 using namespace std;
