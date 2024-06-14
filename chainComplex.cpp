@@ -3,7 +3,7 @@
 #include <vector>
 using namespace std;
 
-int maxStrand = 0;
+using ll = long long;
 
 class PD{
     public:
@@ -19,13 +19,20 @@ class PD{
         }
 };
 
-void merge(set<int>& a, set<int>& b){ // puts b into a
+void setMerge(set<int>& a, set<int>& b){ // puts b into a
     for (int x : b){
         a.insert(x);
     }
 }
 
-vector<set<int>> resolutionCircles(PD diagram, int resolution){
+template<typename T> set<T> setComplement(set<T> a, set<T> b){ // a setminus b
+    for (T x : b){
+        a.erase(x);
+    }
+    return a;
+}
+
+set<set<int>> resolutionCircles(PD diagram, int resolution){
     vector<set<int>> circles;
     for (int i = 0; i < diagram.size(); i++){
         vector<pair<int, int>> strandPairings(2);
@@ -52,7 +59,7 @@ vector<set<int>> resolutionCircles(PD diagram, int resolution){
                 }
             }
             while (toMerge.size() > 1){
-                merge(toMerge[0], toMerge.back());
+                setMerge(toMerge[0], toMerge.back());
                 toMerge.pop_back();
             }
             if (toMerge.size()){
@@ -66,13 +73,14 @@ vector<set<int>> resolutionCircles(PD diagram, int resolution){
             }
         }
     }
-
-    return circles;
+    set<set<int>> ret;
+    for (auto s : circles) ret.insert(s);
+    return ret;
 }
 
 int main(){
     int n;
-    cout << "Input the number of crossings:" << endl;
+    cout << "Input the number of crossings (no more than 60):" << endl;
     cin >> n;
     cout << "Input " << 4 * n << " space-separated numbers in planar diagram notation." << endl;
 
@@ -80,13 +88,19 @@ int main(){
     for (int i = 0; i < n; i++){
         for (int j = 0; j < 4; j++){
             cin >> D.crossings[i][j];
-            maxStrand = max(maxStrand, D.crossings[i][j]);
         }
     }
 
     // testing if resolutionCircles produces correct circles
-    // vector<set<int>> res = resolutionCircles(D, 0);
+    // set<set<int>> res = resolutionCircles(D, 2);
     // cout << res.size() << endl;
+
+    // construct resolution cube
+    vector<set<set<int>>> resolutionCube(1ll << n);
+    for (ll i = 0; i < (1 << n); i++){
+        resolutionCube[i] = resolutionCircles(D, i);
+        cout << i << ": " << resolutionCube[i].size() << endl;
+    }
 
     return 0;
 }
