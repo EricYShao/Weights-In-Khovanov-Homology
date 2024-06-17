@@ -93,6 +93,7 @@ PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
 
 vector<vector<vector<bool>>> chainComplex(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
+// works with the unreduced Khovanov homology to obtain differentials
 
     // int n;
     // cout << "Input the number of crossings (no more than 60):" << endl;
@@ -147,6 +148,20 @@ vector<vector<vector<bool>>> chainComplex(PD D){
         differentialMaps[i] = vector<vector<bool>>(basisStartCount[i], vector<bool>(basisStartCount[i+1]));
     }
 
+    vector<map<set<int>, ll>> resolutionCircleIndices(1ll << n);
+    // get the circle indices of everything in a resolution
+
+    vector<vector<set<int>>> resolutionCirclesVector(1ll << n);
+    // store the circles of a resolution in order in a vector
+
+    for (ll resolution = 0; resolution < (1ll << n); resolution++){
+        ll count = 0;
+        for (auto x : resolutionCube[resolution]){
+            resolutionCircleIndices[resolution][x] = count++;
+            resolutionCirclesVector[resolution].push_back(x);
+        }
+    }
+
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         for (int j = 0; j < n; j++){
             if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
@@ -157,22 +172,22 @@ vector<vector<vector<bool>>> chainComplex(PD D){
                 set<set<int>> oldDiff = setComplement<set<int>>(oldCircles, newCircles);
                 set<set<int>> newDiff = setComplement<set<int>>(newCircles, oldCircles);
 
-                // get the circle indices of everything in the set of oldCircles
-                map<set<int>, ll> oldCircleIndices;
-                ll count = 0;
-                for (auto x : oldCircles)
-                    oldCircleIndices[x] = count++;
+                // // get the circle indices of everything in the set of oldCircles
+                // map<set<int>, ll> oldCircleIndices;
+                // ll count = 0;
+                // for (auto x : oldCircles)
+                //     oldCircleIndices[x] = count++;
 
-                // get the circle indices of everything in the set of newCircles
-                map<set<int>, ll> newCircleIndices;
-                count = 0;
-                for (auto x : newCircles)
-                    newCircleIndices[x] = count++;
+                // // get the circle indices of everything in the set of newCircles
+                // map<set<int>, ll> newCircleIndices;
+                // count = 0;
+                // for (auto x : newCircles)
+                //     newCircleIndices[x] = count++;
 
-                vector<set<int>> oldCirclesVector;
-                for (auto x : oldCircles){
-                    oldCirclesVector.push_back(x);
-                }
+                // vector<set<int>> oldCirclesVector;
+                // for (auto x : oldCircles){
+                //     oldCirclesVector.push_back(x);
+                // }
 
                 for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
                     ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
@@ -181,20 +196,20 @@ vector<vector<vector<bool>>> chainComplex(PD D){
                         // must be a merge
                         // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
                         bool circleOneStatus = ((oldCirclesSubset 
-                        & (1ll << oldCircleIndices[*(oldDiff.begin())])) != 0);
+                        & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
                         bool circleTwoStatus = ((oldCirclesSubset 
-                        & (1ll << oldCircleIndices[*(++oldDiff.begin())])) != 0);
+                        & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
 
                         bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
                         // rule based on Audoux's notation
 
                         ll newCircleIndex = circleStartingIndex[newResolution];
                         // update index for the new merged circle
-                        if (newCircleStatus) newCircleIndex += (1ll << newCircleIndices[*newDiff.begin()]);
+                        if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
                         for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                if (newCircles.count(oldCirclesVector[oldCirclesIndex])){
-                                    newCircleIndex += (1ll << newCircleIndices[oldCirclesVector[oldCirclesIndex]]);
+                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                    newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
                                 }
                             }
                         }
@@ -203,31 +218,32 @@ vector<vector<vector<bool>>> chainComplex(PD D){
                     }
                     else if (oldDiff.size() == 1){ // must be a split
                         // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
+                        // based on Audoux's notation
 
                         ll newCircleIndex1 = circleStartingIndex[newResolution];
                         ll newCircleIndex2 = circleStartingIndex[newResolution];
                         for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                if (newCircles.count(oldCirclesVector[oldCirclesIndex])){
-                                    newCircleIndex1 += (1ll << newCircleIndices[oldCirclesVector[oldCirclesIndex]]);
-                                    newCircleIndex2 += (1ll << newCircleIndices[oldCirclesVector[oldCirclesIndex]]);
+                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                    newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                    newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
                                 }
                             }
                         }
 
                         // implementing (+) ->
-                        if (oldCirclesSubset & (1ll << oldCircleIndices[*oldDiff.begin()])){ // (+) ->
+                        if (oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()])){ // (+) ->
                             // newCircleIndex1: (-)(-), newCircleIndex2: (+)(+)
-                            newCircleIndex2 += (1ll << newCircleIndices[*newDiff.begin()]);
-                            newCircleIndex2 += (1ll << newCircleIndices[*(++newDiff.begin())]);
+                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
                             differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
                             differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                         }
                         else{ // (-) ->
                             // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
-                            newCircleIndex1 += (1ll << newCircleIndices[*newDiff.begin()]);
-                            newCircleIndex2 += (1ll << newCircleIndices[*(++newDiff.begin())]);
+                            newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
                             differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
                             differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
