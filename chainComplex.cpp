@@ -80,28 +80,42 @@ set<set<int>> resolutionCircles(PD diagram, int resolution){
     return ret;
 }
 
-int main(){
-    int n;
-    cout << "Input the number of crossings (no more than 60):" << endl;
-    cin >> n;
-    cout << "Input " << 4 * n << " space-separated numbers in planar diagram notation." << endl;
-
+PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
+// space-separated
     PD D(n);
     for (int i = 0; i < n; i++){
         for (int j = 0; j < 4; j++){
             cin >> D.crossings[i][j];
         }
     }
+    return D;
+}
+
+vector<vector<vector<bool>>> chainComplex(PD D){
+// returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
+
+    // int n;
+    // cout << "Input the number of crossings (no more than 60):" << endl;
+    // cin >> n;
+    // cout << "Input " << 4 * n << " space-separated numbers in planar diagram notation." << endl;
+
+    // PD D(n);
+    // for (int i = 0; i < n; i++){
+    //     for (int j = 0; j < 4; j++){
+    //         cin >> D.crossings[i][j];
+    //     }
+    // }
 
     // testing if resolutionCircles produces correct circles
     // set<set<int>> res = resolutionCircles(D, 2);
     // cout << res.size() << endl;
 
     // construct resolution cube
+    int n = D.size();
     vector<set<set<int>>> resolutionCube(1ll << n);
     for (ll i = 0; i < (1ll << n); i++){
         resolutionCube[i] = resolutionCircles(D, i);
-        cout << i << ": " << resolutionCube[i].size() << endl;
+        // cerr << i << ": " << resolutionCube[i].size() << endl;
     }
 
     vector<ll> ordering((1 << n));
@@ -135,7 +149,7 @@ int main(){
 
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         for (int j = 0; j < n; j++){
-            if (resolution & (1ll << j) == 0){ // jth bit not yet set
+            if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
                 ll newResolution = resolution | (1ll << j);
                 set<set<int>> oldCircles = resolutionCube[resolution];
                 set<set<int>> newCircles = resolutionCube[newResolution];
@@ -166,17 +180,17 @@ int main(){
                     if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
                         // must be a merge
                         // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
-                        bool circleOneStatus = (oldCirclesSubset 
-                        & (1ll << oldCircleIndices[*(oldDiff.begin())]) != 0);
-                        bool circleTwoStatus = (oldCirclesSubset 
-                        & (1ll << oldCircleIndices[*(++oldDiff.begin())]) != 0);
+                        bool circleOneStatus = ((oldCirclesSubset 
+                        & (1ll << oldCircleIndices[*(oldDiff.begin())])) != 0);
+                        bool circleTwoStatus = ((oldCirclesSubset 
+                        & (1ll << oldCircleIndices[*(++oldDiff.begin())])) != 0);
 
                         bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
                         // rule based on Audoux's notation
 
                         ll newCircleIndex = circleStartingIndex[newResolution];
                         // update index for the new merged circle
-                        if (newCircleStatus) newCircleIndex += (1 << newCircleIndices[*newDiff.begin()]);
+                        if (newCircleStatus) newCircleIndex += (1ll << newCircleIndices[*newDiff.begin()]);
                         for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                 if (newCircles.count(oldCirclesVector[oldCirclesIndex])){
@@ -224,17 +238,17 @@ int main(){
         }
     }
 
-    for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-        for (ll columnIndex = 0; columnIndex < differentialMaps[i][0].size(); columnIndex++){
-            for (ll rowIndex = 0; rowIndex < differentialMaps[i].size(); rowIndex++){
-                cout << differentialMaps[i][rowIndex][columnIndex] << ' ';
-            }
-            cout << endl;
-        }
-        cout << endl;
-    }
+    // for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
+    //     for (ll columnIndex = 0; columnIndex < differentialMaps[i][0].size(); columnIndex++){
+    //         for (ll rowIndex = 0; rowIndex < differentialMaps[i].size(); rowIndex++){
+    //             cout << differentialMaps[i][rowIndex][columnIndex] << ' ';
+    //         }
+    //         cout << endl;
+    //     }
+    //     cout << endl;
+    // }
 
-    return 0;
+    return differentialMaps;
 }
 
 // 3 1 4 2 3 2 4 1
