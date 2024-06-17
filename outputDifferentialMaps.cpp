@@ -8,6 +8,9 @@ int main(){
 
     bool outputMatrixAsIntegers = 0;
     // if set to true, it will output columns as integers
+    bool reducedHomology = 0;
+    // if set to true, it will use reduced homology, with
+    // the marked point on strand 1
 
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
@@ -17,7 +20,9 @@ int main(){
     
     PD D = readPlanarDiagram(n);
     
-    vector<vector<vector<bool>>> maps = differentialMaps(D);
+    vector<vector<vector<bool>>> maps;
+    if (reducedHomology) maps = reducedDifferentialMaps(D);
+    else maps = differentialMaps(D);
 
     if (!outputMatrixAsIntegers){
         for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
