@@ -5,16 +5,17 @@
 #include <bits/stdc++.h>
  
 using namespace std;
+using ll = long long;
  
-const int N = 1e5 + 10, LOG_A = 20;
+const ll N = 1e5 + 10, LOG_A = 60;
 
-int basis[LOG_A];
+ll basis[LOG_A];
 
-int sz;
+ll sz;
 
-void insertVector(int mask) {
-	for (int i = 0; i < LOG_A; i++) {
-		if ((mask & 1 << i) == 0) continue;
+void insertVector(ll mask) {
+	for (ll i = 0; i < LOG_A; i++) {
+		if ((mask & 1ll << i) == 0) continue;
 
 		if (!basis[i]) {
 			basis[i] = mask;
@@ -28,11 +29,11 @@ void insertVector(int mask) {
 }
 
 int main() {
-	int n;
+	ll n;
 	cin >> n;
 
-	for (int i = 0; i < n; i++) {
-		int a;
+	for (ll i = 0; i < n; i++) {
+		ll a;
 		scanf("%d", &a);
 
 		insertVector(a);

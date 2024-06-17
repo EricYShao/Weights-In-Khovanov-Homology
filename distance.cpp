@@ -1,4 +1,7 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <map>
+
 using namespace std;
 
 #define sz(x) ((int)x.size())
@@ -35,12 +38,28 @@ signed main()
 
     ll minDist = INF;
 
-    for (ll i = 1; i < (1ll << n); i++){
+    map<ll, ll> maskCount;
+
+    for (ll i = 1; i < (1ll << (n/2)); i++){
         ll mask = 0;
-        forn(j, n){
-            if (i & 1ll << j){
+        forn(j, n/2){
+            if (i & (1ll << j)){
                 mask ^= vectors[j];
             }
+        }
+        maskCount[mask] = min(maskCount[mask], (ll)__builtin_popcountll(i));
+        if (!mask) minDist = min(minDist, (ll)__builtin_popcountll(i));
+    }
+
+    for (ll i = 1; i < (1ll << ((n+1)/2)); i++){
+        ll mask = 0;
+        forn(j, (n+1)/2){
+            if (i & (1ll << j)){
+                mask ^= vectors[j + n/2];
+            }
+        }
+        if (maskCount.count(mask)){
+            minDist = min(minDist, __builtin_popcountll(i) + maskCount[mask]);
         }
         if (!mask) minDist = min(minDist, (ll)__builtin_popcountll(i));
     }

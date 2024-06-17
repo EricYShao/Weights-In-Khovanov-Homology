@@ -91,7 +91,7 @@ PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
     return D;
 }
 
-vector<vector<vector<bool>>> chainComplex(PD D){
+vector<vector<vector<bool>>> differentialMaps(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
 // works with the unreduced Khovanov homology to obtain differentials
 
@@ -138,14 +138,14 @@ vector<vector<vector<bool>>> chainComplex(PD D){
     
 
 
-    vector<vector<vector<bool>>> differentialMaps(n);
-    // differentialMaps[i] gives the differential map from i 1-resolutions to
+    vector<vector<vector<bool>>> differentialMap(n);
+    // differentialMap[i] gives the differential map from i 1-resolutions to
     // i+1 1-resolutions
-    // differentialMaps[i] stores the matrix as a (horizontal) vector of column vectors
+    // differentialMap[i] stores the matrix as a (horizontal) vector of column vectors
     
-    // resize differentialMaps matrices
+    // resize differentialMap matrices
     for (int i = 0; i < n; i++){
-        differentialMaps[i] = vector<vector<bool>>(basisStartCount[i], vector<bool>(basisStartCount[i+1]));
+        differentialMap[i] = vector<vector<bool>>(basisStartCount[i], vector<bool>(basisStartCount[i+1]));
     }
 
     vector<map<set<int>, ll>> resolutionCircleIndices(1ll << n);
@@ -214,7 +214,7 @@ vector<vector<vector<bool>>> chainComplex(PD D){
                             }
                         }
 
-                        differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                     }
                     else if (oldDiff.size() == 1){ // must be a split
                         // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
@@ -237,16 +237,16 @@ vector<vector<vector<bool>>> chainComplex(PD D){
                             newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
                             newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
-                            differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                            differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                         }
                         else{ // (-) ->
                             // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
                             newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
                             newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
-                            differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                            differentialMaps[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                         }
                     }
                 }
@@ -255,16 +255,16 @@ vector<vector<vector<bool>>> chainComplex(PD D){
     }
 
     // for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-    //     for (ll columnIndex = 0; columnIndex < differentialMaps[i][0].size(); columnIndex++){
-    //         for (ll rowIndex = 0; rowIndex < differentialMaps[i].size(); rowIndex++){
-    //             cout << differentialMaps[i][rowIndex][columnIndex] << ' ';
+    //     for (ll columnIndex = 0; columnIndex < differentialMap[i][0].size(); columnIndex++){
+    //         for (ll rowIndex = 0; rowIndex < differentialMap[i].size(); rowIndex++){
+    //             cout << differentialMap[i][rowIndex][columnIndex] << ' ';
     //         }
     //         cout << endl;
     //     }
     //     cout << endl;
     // }
 
-    return differentialMaps;
+    return differentialMap;
 }
 
 // 3 1 4 2 3 2 4 1
