@@ -1,5 +1,4 @@
 #include "differentialMaps.h"
-using namespace std;
 
 int main(){
 // takes in the number of crossings followed by all the crossings in
@@ -8,7 +7,7 @@ int main(){
 
     bool outputMatrixAsIntegers = 0;
     // if set to true, it will output columns as integers
-    bool reducedHomology = 0;
+    bool reducedHomology = 1;
     // if set to true, it will use reduced homology, with
     // the marked point on strand 1
 
@@ -16,11 +15,11 @@ int main(){
     freopen("output.txt", "w", stdout);
 
     int n;
-    cin >> n;
+    std::cin >> n;
     
     PD D = readPlanarDiagram(n);
     
-    vector<vector<vector<bool>>> maps;
+    std::vector<std::vector<std::vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
     else maps = differentialMaps(D);
 
@@ -28,11 +27,11 @@ int main(){
         for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
             for (ll columnIndex = 0; columnIndex < maps[i][0].size(); columnIndex++){
                 for (ll rowIndex = 0; rowIndex < maps[i].size(); rowIndex++){
-                    cout << maps[i][rowIndex][columnIndex] << ' ';
+                    std::cout << maps[i][rowIndex][columnIndex] << ' ';
                 }
-                cout << endl;
+                std::cout << std::endl;
             }
-            cout << endl;
+            std::cout << std::endl;
         }
     }
     else{
@@ -44,16 +43,16 @@ int main(){
                     ret += val * maps[i][columnVectorIndex][row];
                     val <<= 1;
                 }
-                cout << ret << ' ';
+                std::cout << ret << ' ';
             }
-            cout << endl << endl;
+            std::cout << std::endl << std::endl;
         }
     }
     
     
     // for (ll i = 0; i < n; i++){
-    //     cout << "Distance from " << i << " 1-resolutions to " << i + 1 << " 1-resolutions is "
-    //     << distance(maps[i]) << endl;
+    //     std::cout << "Distance from " << i << " 1-resolutions to " << i + 1 << " 1-resolutions is "
+    //     << distance(maps[i]) << std::endl;
     // }
 
     return 0;

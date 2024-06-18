@@ -4,13 +4,11 @@
 #include <map>
 #ifndef DIFFERENTIAL_MAPS
 
-using namespace std;
-
 using ll = long long;
 
 class PD{
     public:
-        vector<vector<int>> crossings; // crossing[i].size() should always be 4
+        std::vector<std::vector<int>> crossings; // crossing[i].size() should always be 4
         int size(){
             return crossings.size();
         }
@@ -22,23 +20,23 @@ class PD{
         }
 };
 
-void setMerge(set<int>& a, set<int>& b){ // puts b into a
+void setMerge(std::set<int>& a, std::set<int>& b){ // puts b into a
     for (int x : b){
         a.insert(x);
     }
 }
 
-template<typename T> set<T> setComplement(set<T> a, set<T> b){ // a setminus b
+template<typename T> std::set<T> setComplement(std::set<T> a, std::set<T> b){ // a setminus b
     for (T x : b){
         a.erase(x);
     }
     return a;
 }
 
-set<set<int>> resolutionCircles(PD diagram, int resolution){
-    vector<set<int>> circles;
+std::set<std::set<int>> resolutionCircles(PD diagram, int resolution){
+    std::vector<std::set<int>> circles;
     for (int i = 0; i < diagram.size(); i++){
-        vector<pair<int, int>> strandPairings(2);
+        std::vector<std::pair<int, int>> strandPairings(2);
         if (!(resolution & (1ll << i))){
             // pair crossing[0] with crossing[1], crossing[2] with crossing[3]
             strandPairings[0] = {diagram.crossings[i][0], diagram.crossings[i][1]};
@@ -51,9 +49,9 @@ set<set<int>> resolutionCircles(PD diagram, int resolution){
         }
         for (int j = 0; j < 2; j++){
             bool found = 0;
-            vector<set<int>> toMerge; // merge circles that have overlapping strands
+            std::vector<std::set<int>> toMerge; // merge circles that have overlapping strands
             for (int i = 0; i < circles.size(); i++){
-                set<int> circle = circles[i];
+                std::set<int> circle = circles[i];
                 if (circle.count(strandPairings[j].first) || circle.count(strandPairings[j].second)){
                     found = 1;
                     toMerge.push_back(circles[i]);
@@ -71,12 +69,12 @@ set<set<int>> resolutionCircles(PD diagram, int resolution){
                 circles.push_back(toMerge[0]);
             }
             if (!found){
-                set<int> newCircle{strandPairings[j].first, strandPairings[j].second};
+                std::set<int> newCircle{strandPairings[j].first, strandPairings[j].second};
                 circles.push_back(newCircle);
             }
         }
     }
-    set<set<int>> ret;
+    std::set<std::set<int>> ret;
     for (auto s : circles) ret.insert(s);
     return ret;
 }
@@ -86,42 +84,42 @@ PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
     PD D(n);
     for (int i = 0; i < n; i++){
         for (int j = 0; j < 4; j++){
-            cin >> D.crossings[i][j];
+            std::cin >> D.crossings[i][j];
         }
     }
     return D;
 }
 
-vector<vector<vector<bool>>> differentialMaps(PD D){
+std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
 // works with the unreduced Khovanov homology to obtain differentials
 
     // int n;
     // cout << "Input the number of crossings (no more than 60):" << endl;
-    // cin >> n;
+    // std::cin >> n;
     // cout << "Input " << 4 * n << " space-separated numbers in planar diagram notation." << endl;
 
     // PD D(n);
     // for (int i = 0; i < n; i++){
     //     for (int j = 0; j < 4; j++){
-    //         cin >> D.crossings[i][j];
+    //         std::cin >> D.crossings[i][j];
     //     }
     // }
 
     // testing if resolutionCircles produces correct circles
-    // set<set<int>> res = resolutionCircles(D, 2);
+    // std::set<std::set<int>> res = resolutionCircles(D, 2);
     // cout << res.size() << endl;
 
     // construct resolution cube
     int n = D.size();
-    vector<set<set<int>>> resolutionCube(1ll << n);
+    std::vector<std::set<std::set<int>>> resolutionCube(1ll << n);
     for (ll i = 0; i < (1ll << n); i++){
         resolutionCube[i] = resolutionCircles(D, i);
         // cerr << i << ": " << resolutionCube[i].size() << endl;
     }
 
-    vector<ll> ordering((1ll << n));
-    vector<ll> circleStartingIndex((1ll << n));
+    std::vector<ll> ordering((1ll << n));
+    std::vector<ll> circleStartingIndex((1ll << n));
     // ordering[k] takes in a resolution k (binary string) and gives the
     // zero-indexed order for all elements
     // that have the same number of bits as k
@@ -129,8 +127,8 @@ vector<vector<vector<bool>>> differentialMaps(PD D){
     // circleStartingIndex[k] takes in a resolution k (binary string)
     // and gives the starting index for basis elements of a
     // particular circle compared to all circles with the same number of bits
-    vector<ll> bitCount(n+1, 0);
-    vector<ll> basisStartCount(n+1, 0);
+    std::vector<ll> bitCount(n+1, 0);
+    std::vector<ll> basisStartCount(n+1, 0);
     for (ll i = 0; i < (1ll << n); i++){
         ordering[i] = bitCount[__builtin_popcountll(i)]++;
         circleStartingIndex[i] = basisStartCount[__builtin_popcountll(i)];
@@ -139,21 +137,21 @@ vector<vector<vector<bool>>> differentialMaps(PD D){
     
 
 
-    vector<vector<vector<bool>>> differentialMap(n);
+    std::vector<std::vector<std::vector<bool>>> differentialMap(n);
     // differentialMap[i] gives the differential map from i 1-resolutions to
     // i+1 1-resolutions
-    // differentialMap[i] stores the matrix as a (horizontal) vector of column vectors
+    // differentialMap[i] stores the matrix as a (horizontal) std::vector of column std::vectors
     
     // resize differentialMap matrices
     for (int i = 0; i < n; i++){
-        differentialMap[i] = vector<vector<bool>>(basisStartCount[i], vector<bool>(basisStartCount[i+1]));
+        differentialMap[i] = std::vector<std::vector<bool>>(basisStartCount[i], std::vector<bool>(basisStartCount[i+1]));
     }
 
-    vector<map<set<int>, ll>> resolutionCircleIndices(1ll << n);
+    std::vector<std::map<std::set<int>, ll>> resolutionCircleIndices(1ll << n);
     // get the circle indices of everything in a resolution
 
-    vector<vector<set<int>>> resolutionCirclesVector(1ll << n);
-    // store the circles of a resolution in order in a vector
+    std::vector<std::vector<std::set<int>>> resolutionCirclesVector(1ll << n);
+    // store the circles of a resolution in order in a std::vector
 
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         ll count = 0;
@@ -167,27 +165,27 @@ vector<vector<vector<bool>>> differentialMaps(PD D){
         for (int j = 0; j < n; j++){
             if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
                 ll newResolution = resolution | (1ll << j);
-                set<set<int>> oldCircles = resolutionCube[resolution];
-                set<set<int>> newCircles = resolutionCube[newResolution];
+                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
 
-                set<set<int>> oldDiff = setComplement<set<int>>(oldCircles, newCircles);
-                set<set<int>> newDiff = setComplement<set<int>>(newCircles, oldCircles);
+                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
 
                 // // get the circle indices of everything in the set of oldCircles
-                // map<set<int>, ll> oldCircleIndices;
+                // std::map<std::set<int>, ll> oldCircleIndices;
                 // ll count = 0;
                 // for (auto x : oldCircles)
                 //     oldCircleIndices[x] = count++;
 
                 // // get the circle indices of everything in the set of newCircles
-                // map<set<int>, ll> newCircleIndices;
+                // std::map<std::set<int>, ll> newCircleIndices;
                 // count = 0;
                 // for (auto x : newCircles)
                 //     newCircleIndices[x] = count++;
 
-                // vector<set<int>> oldCirclesVector;
+                // std::vector<std::set<int>> oldCirclesstd::vector;
                 // for (auto x : oldCircles){
-                //     oldCirclesVector.push_back(x);
+                //     oldCirclesstd::vector.push_back(x);
                 // }
 
                 for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
@@ -268,25 +266,25 @@ vector<vector<vector<bool>>> differentialMaps(PD D){
     return differentialMap;
 }
 
-vector<vector<vector<bool>>> reducedDifferentialMaps(PD D){
+std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
     // returns the reduced differential map of a planar diagram D
     // assumes that strand 1 is the marked strand
     
-    // int n; cin >> n;
+    // int n; std::cin >> n;
     // PD D = readPlanarDiagram(n);
 
     int n = D.size();
 
     // construct resolution cube
     // int n = D.size();
-    vector<set<set<int>>> resolutionCube(1ll << n);
+    std::vector<std::set<std::set<int>>> resolutionCube(1ll << n);
     for (ll i = 0; i < (1ll << n); i++){
         resolutionCube[i] = resolutionCircles(D, i);
         // cerr << i << ": " << resolutionCube[i].size() << endl;
     }
 
-    vector<ll> ordering((1ll << n));
-    vector<ll> circleStartingIndex((1ll << n));
+    std::vector<ll> ordering((1ll << n));
+    std::vector<ll> circleStartingIndex((1ll << n));
     // ordering[k] takes in a resolution k (binary string) and gives the
     // zero-indexed order for all elements
     // that have the same number of bits as k
@@ -294,30 +292,30 @@ vector<vector<vector<bool>>> reducedDifferentialMaps(PD D){
     // circleStartingIndex[k] takes in a resolution k (binary string)
     // and gives the starting index for basis elements of a
     // particular circle compared to all circles with the same number of bits
-    vector<ll> bitCount(n+1, 0);
-    vector<ll> basisStartCount(n+1, 0);
+    std::vector<ll> bitCount(n+1, 0);
+    std::vector<ll> basisStartCount(n+1, 0);
     for (ll i = 0; i < (1ll << n); i++){
         ordering[i] = bitCount[__builtin_popcountll(i)]++;
         circleStartingIndex[i] = basisStartCount[__builtin_popcountll(i)];
         basisStartCount[__builtin_popcountll(i)] += (1ll << (resolutionCube[i].size() - 1));
-        // the -1 comes from forcing strand 1 to be labelled as X, no choice -> halves dimension
+        // the -1 comes from forstd::cing strand 1 to be labelled as X, no choice -> halves dimension
     }
 
-    vector<vector<vector<bool>>> differentialMap(n);
+    std::vector<std::vector<std::vector<bool>>> differentialMap(n);
     // differentialMap[i] gives the differential map from i 1-resolutions to
     // i+1 1-resolutions
-    // differentialMap[i] stores the matrix as a (horizontal) vector of column vectors
+    // differentialMap[i] stores the matrix as a (horizontal) std::vector of column std::vectors
     
     // resize differentialMap matrices
     for (int i = 0; i < n; i++){
-        differentialMap[i] = vector<vector<bool>>(basisStartCount[i], vector<bool>(basisStartCount[i+1]));
+        differentialMap[i] = std::vector<std::vector<bool>>(basisStartCount[i], std::vector<bool>(basisStartCount[i+1]));
     }
 
-    vector<map<set<int>, ll>> resolutionCircleIndices(1ll << n);
+    std::vector<std::map<std::set<int>, ll>> resolutionCircleIndices(1ll << n);
     // get the circle indices of everything in a resolution
 
-    vector<vector<set<int>>> resolutionCirclesVector(1ll << n);
-    // store the circles of a resolution in order in a vector
+    std::vector<std::vector<std::set<int>>> resolutionCirclesVector(1ll << n);
+    // store the circles of a resolution in order in a std::vector
 
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         ll count = -1;
@@ -331,11 +329,11 @@ vector<vector<vector<bool>>> reducedDifferentialMaps(PD D){
         for (int j = 0; j < n; j++){
             if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
                 ll newResolution = resolution | (1ll << j);
-                set<set<int>> oldCircles = resolutionCube[resolution];
-                set<set<int>> newCircles = resolutionCube[newResolution];
+                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
 
-                set<set<int>> oldDiff = setComplement<set<int>>(oldCircles, newCircles);
-                set<set<int>> newDiff = setComplement<set<int>>(newCircles, oldCircles);
+                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
 
                 bool containsX = 0;
                 for (auto x : oldDiff){
