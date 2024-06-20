@@ -5,6 +5,7 @@
 #ifndef DIFFERENTIAL_MAPS
 
 using ll = long long;
+using ull = unsigned long long;
 
 class PD{
     public:
@@ -50,7 +51,7 @@ std::set<std::set<int>> resolutionCircles(PD diagram, int resolution){
         for (int j = 0; j < 2; j++){
             bool found = 0;
             std::vector<std::set<int>> toMerge; // merge circles that have overlapping strands
-            for (int i = 0; i < circles.size(); i++){
+            for (int i = 0; (ull) i < circles.size(); i++){
                 std::set<int> circle = circles[i];
                 if (circle.count(strandPairings[j].first) || circle.count(strandPairings[j].second)){
                     found = 1;
@@ -93,6 +94,7 @@ PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
 std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
 // works with the unreduced Khovanov homology to obtain differentials
+// complexity: O(n * 4^n)
 
     // int n;
     // cout << "Input the number of crossings (no more than 60):" << endl;
@@ -171,23 +173,6 @@ std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
                 std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
                 std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
 
-                // // get the circle indices of everything in the set of oldCircles
-                // std::map<std::set<int>, ll> oldCircleIndices;
-                // ll count = 0;
-                // for (auto x : oldCircles)
-                //     oldCircleIndices[x] = count++;
-
-                // // get the circle indices of everything in the set of newCircles
-                // std::map<std::set<int>, ll> newCircleIndices;
-                // count = 0;
-                // for (auto x : newCircles)
-                //     newCircleIndices[x] = count++;
-
-                // std::vector<std::set<int>> oldCirclesstd::vector;
-                // for (auto x : oldCircles){
-                //     oldCirclesstd::vector.push_back(x);
-                // }
-
                 for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
                     ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
                     // (-) <-> 0, (+) <-> 1
@@ -205,7 +190,7 @@ std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
                         ll newCircleIndex = circleStartingIndex[newResolution];
                         // update index for the new merged circle
                         if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                        for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                 if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
                                     newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
@@ -221,7 +206,7 @@ std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
 
                         ll newCircleIndex1 = circleStartingIndex[newResolution];
                         ll newCircleIndex2 = circleStartingIndex[newResolution];
-                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                        for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                 if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
                                     newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
@@ -252,16 +237,6 @@ std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
             }
         }
     }
-
-    // for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-    //     for (ll columnIndex = 0; columnIndex < differentialMap[i][0].size(); columnIndex++){
-    //         for (ll rowIndex = 0; rowIndex < differentialMap[i].size(); rowIndex++){
-    //             cout << differentialMap[i][rowIndex][columnIndex] << ' ';
-    //         }
-    //         cout << endl;
-    //     }
-    //     cout << endl;
-    // }
 
     return differentialMap;
 }
@@ -358,7 +333,7 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
                             ll newCircleIndex = circleStartingIndex[newResolution];
                             // update index for the new merged circle
                             if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1; oldCirclesIndex++){
+                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
                                 if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                     if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
                                         newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
@@ -374,7 +349,7 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
 
                             ll newCircleIndex1 = circleStartingIndex[newResolution];
                             ll newCircleIndex2 = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size()-1; oldCirclesIndex++){
+                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size()-1ll; oldCirclesIndex++){
                                 if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                     if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
                                         newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
@@ -408,7 +383,7 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
                         ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
                         if (oldDiff.size() == 2){ // must be a merge
                             ll newCircleIndex = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1; oldCirclesIndex++){
+                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
                                 if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                     if (!oldDiff.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
                                         newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
@@ -420,7 +395,7 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
                         else if (oldDiff.size() == 1){ // must be a split
                             ll newCircleIndex1 = circleStartingIndex[newResolution];
                             ll newCircleIndex2 = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1; oldCirclesIndex++){
+                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
                                 if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                     newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
                                     newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);

@@ -23,8 +23,8 @@ signed main()
 
     cout << "This program finds the minimum distance. Please enter the number of basis elements for the image: " << endl;
     ll n; cin >> n;
-    while (n >= 60){
-        cout << "Please enter a number less than 60" << endl;
+    while (n >= 120){
+        cout << "Please enter a number less than 120" << endl;
         cin >> n;
     }
     cout << "Input " << n << " integers, each representing a basis element in (Z/2Z)^" << n << ':' << endl;
@@ -47,7 +47,8 @@ signed main()
                 mask ^= vectors[j];
             }
         }
-        maskCount[mask] = min(maskCount[mask], (ll)__builtin_popcountll(i));
+        if (!maskCount.count(mask)) maskCount[mask] = (ll)__builtin_popcountll(i);
+        else maskCount[mask] = min(maskCount[mask], (ll)__builtin_popcountll(i));
         if (!mask) minDist = min(minDist, (ll)__builtin_popcountll(i));
     }
 
