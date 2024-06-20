@@ -3,6 +3,7 @@
 
 using namespace std;
 using ld = long double;
+using ll = long long;
 
 int main(){
 // takes in the number of crossings followed by all the crossings in
@@ -21,11 +22,20 @@ int main(){
     freopen("input.txt", "r", stdin);
     if (!timeOutput) freopen("output.txt", "w", stdout);
 
-    int n;
-    std::cin >> n;
+    vector<vector<int>> input;
+    int x;
+    while (cin >> x){
+        if (!input.size() || input[input.size()-1].size() == 4){
+            input.push_back({x});
+        }
+        else{
+            input[input.size()-1].push_back(x);
+        }
+    }
 
     ld tic = clock();
-    PD D = readPlanarDiagram(n);
+    PD D = createPlanarDiagram(input);
+    ll n = D.size();
     
     std::vector<std::vector<std::vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);

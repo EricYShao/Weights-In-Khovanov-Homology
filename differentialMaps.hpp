@@ -91,6 +91,16 @@ PD readPlanarDiagram(int n){ // reads planar diagram, given n crossings
     return D;
 }
 
+PD createPlanarDiagram(std::vector<std::vector<int>> &crossings){ // crossings[i].size() should be 4
+    PD D(crossings.size());
+    for (int i = 0; i < crossings.size(); i++){
+        for (int j = 0; j < 4; j++){
+            D.crossings[i][j] = crossings[i][j];
+        }
+    }
+    return D;
+}
+
 std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
 // works with the unreduced Khovanov homology to obtain differentials

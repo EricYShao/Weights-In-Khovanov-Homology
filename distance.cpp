@@ -21,20 +21,24 @@ signed main()
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    cout << "This program finds the minimum distance. Please enter the number of basis elements for the image: " << endl;
-    ll n; cin >> n;
-    while (n >= 120){
-        cout << "Please enter a number less than 120" << endl;
-        cin >> n;
-    }
-    cout << "Input " << n << " integers, each representing a basis element in (Z/2Z)^" << n << ':' << endl;
+    // cout << "This program finds the minimum distance. Please enter the number of basis elements for the image: " << endl;
+    // ll n; cin >> n;
+    // while (n >= 120){
+    //     cout << "Please enter a number less than 120" << endl;
+    //     cin >> n;
+    // }
+    // cout << "Input " << n << " integers, each representing a basis element in (Z/2Z)^" << n << ':' << endl;
     
     vll vectors;
 
-    forn(i, n){
-        ll x; cin >> x;
-        vectors.pb(x);
-    }
+    // forn(i, n){
+    //     ll x; cin >> x;
+    //     vectors.pb(x);
+    // }
+    ll x;
+    while (cin >> x) vectors.pb(x);
+    ll n = vectors.size();
+    cout << n << " column vectors" << endl;
 
     ll minDist = INF;
 
@@ -42,6 +46,7 @@ signed main()
 
     for (ll i = 1; i < (1ll << (n/2)); i++){
         ll mask = 0;
+        if ((ll)__builtin_popcountll(i) >= minDist) continue;
         forn(j, n/2){
             if (i & (1ll << j)){
                 mask ^= vectors[j];
@@ -53,6 +58,7 @@ signed main()
     }
 
     for (ll i = 1; i < (1ll << ((n+1)/2)); i++){
+        if ((ll)__builtin_popcountll(i) >= minDist) continue;
         ll mask = 0;
         forn(j, (n+1)/2){
             if (i & (1ll << j)){
