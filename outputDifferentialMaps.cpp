@@ -5,14 +5,65 @@ using namespace std;
 using ld = long double;
 using ll = long long;
 
-int main(){
+void outputAsIntegers(vector<vector<vector<bool>>> &maps){
+    ll n = maps.size();
+    for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
+        cout << maps[i].size() << endl;
+        for (ll columnVectorIndex = 0; (ull) columnVectorIndex < maps[i].size(); columnVectorIndex++){
+            ll val = 1;
+            ll ret = 0;
+            for (ll row = 0; (ull) row < maps[i][columnVectorIndex].size(); row++){
+                ret += val * maps[i][columnVectorIndex][row];
+                val <<= 1;
+            }
+            cout << ret << ' ';
+        }
+        cout << endl << endl;
+    }
+}
+
+void outputMatrix(vector<vector<vector<bool>>> &maps){
+    ll n = maps.size();
+    for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
+        for (ll columnIndex = 0; (ull)columnIndex < maps[i][0].size(); columnIndex++){
+            for (ll rowIndex = 0; (ull)rowIndex < maps[i].size(); rowIndex++){
+                cout << maps[i][rowIndex][columnIndex] << ' ';
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+}
+
+void outputMatrixGapNotation(vector<vector<vector<bool>>> &maps){
+    ll n = maps.size();
+    // compare the output on line i+1 with line n+i to get a distance
+    
+    for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
+        cout << '[';
+        for (ll columnIndex = 0; (ull)columnIndex < maps[i][0].size(); columnIndex++){
+            cout << '[';
+            for (ll rowIndex = 0; (ull)rowIndex < maps[i].size(); rowIndex++){
+                cout << maps[i][rowIndex][columnIndex];
+                if (rowIndex < maps[i].size()-1) cout << ',';
+            }
+            cout << "]";
+            if (columnIndex < maps[i][0].size() - 1) cout << ',';
+        }
+        cout << ']';
+        cout << endl;
+    }
+}
+
+signed main(){
 // takes in the number of crossings followed by all the crossings in
 // space separated planar diagram notation in input.txt, and outputs
 // all of the differential matrices in output.txt
 
-    bool outputMatrixAsIntegers = 0;
-    // if set to true, it will output columns as integers
-    bool reducedHomology = 0;
+    int matrixFormat = 2;
+    // 0 for 0 and 1 matrices, 1 for gap notation, 2 for integers
+
+    bool reducedHomology = 1;
     // if set to true, it will use reduced homology, with
     // the marked point on strand 1
     bool timeOutput = 0;
@@ -37,7 +88,7 @@ int main(){
     PD D = createPlanarDiagram(input);
     ll n = D.size();
     
-    std::vector<std::vector<std::vector<bool>>> maps;
+    vector<vector<vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
     else maps = differentialMaps(D);
 
@@ -47,40 +98,40 @@ int main(){
         return 0;
     }
     
-    if (!outputMatrixAsIntegers){
-        for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-            for (ll columnIndex = 0; (ull) columnIndex < maps[i][0].size(); columnIndex++){
-                for (ll rowIndex = 0; (ull) rowIndex < maps[i].size(); rowIndex++){
-                    std::cout << maps[i][rowIndex][columnIndex] << ' ';
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
-        }
+    if (matrixFormat == 0){
+        outputMatrix(maps);
+    }
+    else if (matrixFormat == 2){
+        cout << n << endl;
+        outputAsIntegers(maps);
     }
     else{
-        for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-            for (ll columnVectorIndex = 0; (ull) columnVectorIndex < maps[i].size(); columnVectorIndex++){
-                ll val = 1;
-                ll ret = 0;
-                for (ll row = 0; (ull) row < maps[i][columnVectorIndex].size(); row++){
-                    ret += val * maps[i][columnVectorIndex][row];
-                    val <<= 1;
-                }
-                std::cout << ret << ' ';
-            }
-            std::cout << std::endl << std::endl;
-        }
+        outputMatrixGapNotation(maps);
+    }
+
+    for (ll i = 0; i < n; i++){
+        maps[i] = takeTranspose(maps[i]);
+    }
+
+    if (matrixFormat == 0){
+        cout << endl << "Transposes Below" << endl;
+        outputMatrix(maps);
+    }
+    else if (matrixFormat == 2){
+        outputAsIntegers(maps);
+    }
+    else{
+        outputMatrixGapNotation(maps);
     }
     
     
 
-    // std::cerr << "done";
+    // cerr << "done";
     
     
     // for (ll i = 0; i < n; i++){
-    //     std::cout << "Distance from " << i << " 1-resolutions to " << i + 1 << " 1-resolutions is "
-    //     << distance(maps[i]) << std::endl;
+    //     cout << "Distance from " << i << " 1-resolutions to " << i + 1 << " 1-resolutions is "
+    //     << distance(maps[i]) << endl;
     // }
 
     return 0;

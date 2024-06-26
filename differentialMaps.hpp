@@ -7,6 +7,7 @@
 using ll = long long;
 using ull = unsigned long long;
 
+
 class PD{
     public:
         std::vector<std::vector<int>> crossings; // crossing[i].size() should always be 4
@@ -34,7 +35,7 @@ template<typename T> std::set<T> setComplement(std::set<T> a, std::set<T> b){ //
     return a;
 }
 
-std::set<std::set<int>> resolutionCircles(PD diagram, int resolution){
+std::set<std::set<int>> resolutionCircles(PD diagram, ll resolution){
     std::vector<std::set<int>> circles;
     for (int i = 0; i < diagram.size(); i++){
         std::vector<std::pair<int, int>> strandPairings(2);
@@ -433,6 +434,14 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
     //     }
     //     cout << endl;
     // }
+}
+
+std::vector<std::vector<bool>> takeTranspose(std::vector<std::vector<bool>> initial){
+    std::vector<std::vector<bool>> ret(initial[0].size(), std::vector<bool>(initial.size()));
+    for (ll i = 0; i < initial.size(); i++)
+        for (ll j = 0; j < initial[0].size(); j++)
+            ret[j][i] = initial[i][j];
+    return ret;
 }
 
 #endif
