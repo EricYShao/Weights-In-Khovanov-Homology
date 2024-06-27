@@ -1,8 +1,4 @@
-// program to find distances when fed matrices from outputDifferentialMaps.cpp
-// in integer form
-
-// todo:
-// use bitsets and take in matrices as normal
+// working code
 
 #include <iostream>
 #include <vector>
@@ -49,15 +45,14 @@ bool isLinearlyIndependent(vll &basis, ll mask){
     return 0;
 }
 
-void outputMinDist(vll &oldMap, vll &newMap){
+int outputMinDist(vll &oldMap, vll &newMap){
     vll basis1(127), basis2(127);
     ll rank1, rank2;
     rank1 = rank2 = 0;
     for (auto x : oldMap) insertVector(rank1, basis1, x);
     for (auto x : newMap) insertVector(rank2, basis2, x);
     if (rank1 == newMap.size() - rank2){
-        cout << 0 << ' ';
-        return;
+        return 0;
     }
     vll vectors = newMap;
     ll n = vectors.size();
@@ -72,15 +67,14 @@ void outputMinDist(vll &oldMap, vll &newMap){
             }
             if (!mask){
                 if (isLinearlyIndependent(basis1, w)){
-                    cout << k << ' ';
-                    return;
+                    return k;
                 }
             }
         }
     }
     
     assert(0);
-    return;
+    return 0;
 }
 
 signed main()
@@ -105,7 +99,7 @@ signed main()
             matrices[i+1].push_back(x);
         }
     }
-    forn(i, numCases) outputMinDist(matrices[i], matrices[i+1]);
+    forn(i, numCases) cout << outputMinDist(matrices[i], matrices[i+1]) << ' ';
     cout << 1 << endl << "1 ";
     matrices.clear();
     matrices = vector<vll>(numCases+1);
@@ -116,7 +110,7 @@ signed main()
             matrices[i].push_back(x);
         }
     }
-    forn(i, numCases) outputMinDist(matrices[i+1], matrices[i]);
+    forn(i, numCases) cout << outputMinDist(matrices[i+1], matrices[i]) << ' ';
 
     return 0;
 }
