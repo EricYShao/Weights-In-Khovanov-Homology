@@ -1,9 +1,12 @@
-// working code
+// program to find distances using planar diagram notation directly from input.txt
+// should modify N to be the maximum matrix size + 10 to be safe
 
 #include <iostream>
 #include <vector>
 #include <map>
 #include <cassert>
+#include <bitset>
+#include "differentialMaps.hpp"
 
 using namespace std;
 
@@ -11,24 +14,41 @@ using namespace std;
 #define all(a) (a).begin(), (a).end()
 #define pb push_back
 
-using ll = __int128_t;
+const int N = 120;
+
+using ll = long long;
 using vi = vector<int>;
 using vll = vector<ll>;
 using pll = pair<ll, ll>;
+using num = bitset<N>;
+using vn = vector<num>;
 
 #define forn(i, n) for (int i = 0; i < int(n); i++)
 
 const ll INF = 1e18;
 
-inline ll next_bit_perm(ll v) { // doesn't work for big v
-    ll t = v | (v - 1);
-    return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctzll(v) + 1));
+inline num nextPerm(num v){
+    num ret = v;
+    forn(i, N-1){
+        if (v[i] && !v[i+1]){
+            ret[i] = 0;
+            ret[i+1] = 1;
+            return ret;
+        }
+    }
+    ret = num(0);
+    return ret;
 }
 
-void insertVector(ll &rank, vll &basis, ll mask) {
+// inline ll next_bit_perm(ll v) { // doesn't work for big v
+//     ll t = v | (v - 1);
+//     return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctzll(v) + 1));
+// }
+
+void insertVector(ll &rank, vn &basis, num mask) {
 	for (ll i = 0; i < basis.size(); i++) {
-		if ((mask & 1ll << i) == 0) continue;
-		if (!basis[i]) {
+		if (!(mask[i])) continue;
+		if (basis[i] == num(0)) {
 			basis[i] = mask;		
             rank++;
 		}
@@ -36,17 +56,17 @@ void insertVector(ll &rank, vll &basis, ll mask) {
 	}
 }
 
-bool isLinearlyIndependent(vll &basis, ll mask){
+bool isLinearlyIndependent(vn &basis, num mask){
     for (ll i = 0; i < basis.size(); i++){
-        if ((mask & 1ll << i) == 0) continue;
-        if (!basis[i]) return 1;
+        if (!(mask[i])) continue;
+        if (basis[i] == num(0)) return 1;
         mask ^= basis[i];
     }
     return 0;
 }
 
-int outputMinDist(vll &oldMap, vll &newMap){
-    vll basis1(127), basis2(127);
+int minDist(vn oldMap, vn newMap){
+    vn basis1(N), basis2(N);
     ll rank1, rank2;
     rank1 = rank2 = 0;
     for (auto x : oldMap) insertVector(rank1, basis1, x);
@@ -54,18 +74,23 @@ int outputMinDist(vll &oldMap, vll &newMap){
     if (rank1 == newMap.size() - rank2){
         return 0;
     }
-    vll vectors = newMap;
+    vn vectors = newMap;
     ll n = vectors.size();
 
     for (int k = 1; k <= n; ++k) {
-        for (ll w = ((ll)(1) <<k)-1; w < ((ll)(1) << n); w = next_bit_perm(w)) {
-            ll mask = 0;
+        num w(0);
+        forn(i, k) w[i] = 1;
+        for (; w != num(0); w = nextPerm(w)) {
+            num mask = 0;
+            bool good = 0;
             forn(j, n){
-                if (w & ((ll)(1) << j)){
+                if (w[j]){
                     mask ^= vectors[j];
+                    good = 1;
                 }
             }
-            if (!mask){
+            if (!good) break;
+            if (mask == num(0)){
                 if (isLinearlyIndependent(basis1, w)){
                     return k;
                 }
@@ -73,7 +98,7 @@ int outputMinDist(vll &oldMap, vll &newMap){
         }
     }
     
-    assert(0);
+    assert(0); // shouldn't reach here
     return 0;
 }
 
@@ -87,30 +112,31 @@ signed main()
     //     cin >> n;
     // }
     // cout << "Input " << n << " integers, each representing a basis element in (Z/2Z)^" << n << ':' << endl;
+    vector<vector<vector<bool>>> maps = planarDiagramToMaps(1);
 
-
-    freopen("output.txt", "r", stdin);
-    int numCases; cin >> numCases;
-    vector<vll> matrices(numCases+1);
-    forn(i, numCases){
-        int n; cin >> n;
-        forn(j, n){
-            long long x; cin >> x;
-            matrices[i+1].push_back(x);
+    // freopen("output.txt", "r", stdin);
+    // int numCases; cin >> numCases;
+    ll n = maps.size();
+    vector<vn> matrices(n+1, vn(0));
+    forn(i, n){
+        matrices[i+1] = vn(maps[i].size(), num(0));
+        forn(j, maps[i].size()){
+            forn(k, maps[i][j].size())
+                matrices[i+1][j][k] = maps[i][j][k];
         }
     }
-    forn(i, numCases) cout << outputMinDist(matrices[i], matrices[i+1]) << ' ';
+    forn(i, n) cout << minDist(matrices[i], matrices[i+1]) << ' ';
     cout << 1 << endl << "1 ";
     matrices.clear();
-    matrices = vector<vll>(numCases+1);
-    forn(i, numCases){
-        int n; cin >> n;
-        forn(j, n){
-            long long x; cin >> x;
-            matrices[i].push_back(x);
+    matrices = vector<vn>(n+1, vn(0));
+    forn(i, n){
+        matrices[i] = vn(maps[i][0].size(), num(0));
+        forn(j, maps[i].size()){
+            forn(k, maps[i][j].size())
+                matrices[i][k][j] = maps[i][j][k];
         }
     }
-    forn(i, numCases) cout << outputMinDist(matrices[i+1], matrices[i]) << ' ';
+    forn(i, n) cout << minDist(matrices[i+1], matrices[i]) << ' ';
 
     return 0;
 }

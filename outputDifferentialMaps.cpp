@@ -70,6 +70,9 @@ signed main(){
     // if set true, then it will simply time how long it takes
     // to compute the differential maps
 
+    bool getMaxSize = 1;
+    // if set true, gets the max matrix size
+
     freopen("input.txt", "r", stdin);
     if (!timeOutput) freopen("output.txt", "w", stdout);
 
@@ -91,6 +94,15 @@ signed main(){
     vector<vector<vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
     else maps = differentialMaps(D);
+
+    if (getMaxSize){
+        ll maxSize = 0;
+        for (ll i = 0; i < maps.size(); i++){
+            maxSize = max(maxSize, (ll)maps[i].size());
+        }
+        cout << maxSize << endl;
+        return 0;
+    }
 
     if (timeOutput){
         ld tac = clock();

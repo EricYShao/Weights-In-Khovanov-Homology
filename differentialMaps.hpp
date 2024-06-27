@@ -2,6 +2,7 @@
 #include <set>
 #include <vector>
 #include <map>
+#include <cassert>
 #ifndef DIFFERENTIAL_MAPS
 
 using ll = long long;
