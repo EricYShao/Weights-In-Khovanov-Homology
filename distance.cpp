@@ -108,7 +108,7 @@ signed main()
     forn(i, numCases) outputMinDist(matrices[i], matrices[i+1]);
     cout << 1 << endl << "1 ";
     matrices.clear();
-    matrices.resize(numCases);
+    matrices = vector<vll>(numCases+1);
     forn(i, numCases){
         int n; cin >> n;
         forn(j, n){
