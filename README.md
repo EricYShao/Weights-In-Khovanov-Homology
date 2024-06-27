@@ -1,4 +1,4 @@
 # Khovanov Homology and Quantum Error Code Research
-Calculates the matrices for differential maps of link diagrams when given Planar Diagram notation, and calculates the minimum CSS distance using Audoux's basis elements.
+Calculates the matrices for differential maps of chain complexes of link diagrams when given Planar Diagram notation, and calculates the minimum CSS distance using Audoux's basis elements.
 
-Differentials can be calculated by downloading either of the .exe files, and encoding a link diagram in planar diagram notation in input.txt, where each line has four space-separated positive integers denoting a crossing. For reduced Khovanov homology, the strand labelled by 1 has the marked point. The differential matrices are then generated in output.txt.
+This can also calculate the matrices in Annular Khovanov Homology for the differential maps of chain complexes of link diagrams when given Planar Diagram notation and information about edges that bound each face in the planar graph.
