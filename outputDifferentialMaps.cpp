@@ -60,7 +60,7 @@ signed main(){
 // space separated planar diagram notation in input.txt, and outputs
 // all of the differential matrices in output.txt
 
-    int matrixFormat = 2;
+    int matrixFormat = 0;
     // 0 for 0 and 1 matrices, 1 for gap notation, 2 for integers
 
     bool reducedHomology = 1;
@@ -93,14 +93,15 @@ signed main(){
     
     vector<vector<vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
-    else maps = differentialMaps(D);
+    else maps = regularDifferentialMaps(D);
+
 
     if (getMaxSize){
         ll maxSize = 0;
         for (ll i = 0; i < maps.size(); i++){
             maxSize = max(maxSize, (ll)maps[i].size());
         }
-        cout << maxSize << endl;
+        cerr << maxSize << endl;
         return 0;
     }
 

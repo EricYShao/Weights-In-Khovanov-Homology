@@ -36,6 +36,33 @@ template<typename T> std::set<T> setComplement(std::set<T> a, std::set<T> b){ //
     return a;
 }
 
+std::vector<std::vector<bool>> takeTranspose(std::vector<std::vector<bool>> initial){
+    std::vector<std::vector<bool>> ret(initial[0].size(), std::vector<bool>(initial.size()));
+    for (ll i = 0; i < initial.size(); i++)
+        for (ll j = 0; j < initial[0].size(); j++)
+            ret[j][i] = initial[i][j];
+    return ret;
+}
+
+void insertVector(std::vector<ll> &basis, ll mask) {
+    for (ll i = 0; i < basis.size(); i++) {
+        if (!(mask & (1ll << i))) continue;
+        if (!basis[i]) {
+            basis[i] = mask;
+        }
+        mask ^= basis[i];
+    }
+}
+
+bool isLinearlyIndependent(const std::vector<ll> &basis, ll mask){
+    for (ll i = 0; i < basis.size(); i++){
+        if (!(mask & (1ll << i))) continue;
+        if (!basis[i]) return 1;
+        mask ^= basis[i];
+    }
+    return 0;
+}
+
 std::set<std::set<int>> resolutionCircles(PD diagram, ll resolution){
     std::vector<std::set<int>> circles;
     for (int i = 0; i < diagram.size(); i++){
@@ -103,7 +130,7 @@ PD createPlanarDiagram(std::vector<std::vector<int>> &crossings){ // crossings[i
     return D;
 }
 
-std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
+std::vector<std::vector<std::vector<bool>>> regularDifferentialMaps(PD D){
 // returns n matrices, each mapping from k 1-resolutions to k+1 1-resolutions for 0 <= k < n
 // works with the unreduced Khovanov homology to obtain differentials
 // complexity: O(n * 4^n)
@@ -177,73 +204,73 @@ std::vector<std::vector<std::vector<bool>>> differentialMaps(PD D){
 
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         for (int j = 0; j < n; j++){
-            if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
-                ll newResolution = resolution | (1ll << j);
-                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
-                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
+            if ((resolution & (1ll << j)) != 0) continue; // jth bit already set
+            // jth bit not yet set
+            ll newResolution = resolution | (1ll << j);
+            std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+            std::set<std::set<int>> newCircles = resolutionCube[newResolution];
 
-                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
-                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
+            std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+            std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
 
-                for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
-                    ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
-                    // (-) <-> 0, (+) <-> 1
-                    if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
-                        // must be a merge
-                        // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
-                        bool circleOneStatus = ((oldCirclesSubset 
-                        & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
-                        bool circleTwoStatus = ((oldCirclesSubset 
-                        & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
+            for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
+                ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
+                // (-) <-> 0, (+) <-> 1
+                if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
+                    // must be a merge
+                    // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
+                    bool circleOneStatus = ((oldCirclesSubset 
+                    & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
+                    bool circleTwoStatus = ((oldCirclesSubset 
+                    & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
 
-                        bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
-                        // rule based on Audoux's notation
+                    bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
+                    // rule based on Audoux's notation
 
-                        ll newCircleIndex = circleStartingIndex[newResolution];
-                        // update index for the new merged circle
-                        if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                        for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
-                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
-                                    newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
-                                }
+                    ll newCircleIndex = circleStartingIndex[newResolution];
+                    // update index for the new merged circle
+                    if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                    for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                        if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                            if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
                             }
                         }
-
-                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                     }
-                    else if (oldDiff.size() == 1){ // must be a split
-                        // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
-                        // based on Audoux's notation
 
-                        ll newCircleIndex1 = circleStartingIndex[newResolution];
-                        ll newCircleIndex2 = circleStartingIndex[newResolution];
-                        for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
-                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
-                                    newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
-                                    newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
-                                }
+                    differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                }
+                else if (oldDiff.size() == 1){ // must be a split
+                    // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
+                    // based on Audoux's notation
+
+                    ll newCircleIndex1 = circleStartingIndex[newResolution];
+                    ll newCircleIndex2 = circleStartingIndex[newResolution];
+                    for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                        if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                            if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
                             }
                         }
+                    }
 
-                        // implementing (+) ->
-                        if (oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()])){ // (+) ->
-                            // newCircleIndex1: (-)(-), newCircleIndex2: (+)(+)
-                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
+                    // implementing (+) ->
+                    if (oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()])){ // (+) ->
+                        // newCircleIndex1: (-)(-), newCircleIndex2: (+)(+)
+                        newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                        newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
-                        }
-                        else{ // (-) ->
-                            // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
-                            newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
+                    }
+                    else{ // (-) ->
+                        // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
+                        newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                        newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
 
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
-                        }
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                     }
                 }
             }
@@ -314,109 +341,109 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
 
     for (ll resolution = 0; resolution < (1ll << n); resolution++){
         for (int j = 0; j < n; j++){
-            if ((resolution & (1ll << j)) == 0){ // jth bit not yet set
-                ll newResolution = resolution | (1ll << j);
-                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
-                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
+            if ((resolution & (1ll << j)) != 0) continue; // jth bit already set
+            // jth bit not yet set
+            ll newResolution = resolution | (1ll << j);
+            std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+            std::set<std::set<int>> newCircles = resolutionCube[newResolution];
 
-                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
-                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
+            std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+            std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
 
-                bool containsX = 0;
-                for (auto x : oldDiff){
-                    if (x.count(1)) containsX = 1;
-                }
+            bool containsX = 0;
+            for (auto x : oldDiff){
+                if (x.count(1)) containsX = 1;
+            }
 
-                if (!containsX){
-                    for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << (oldCircles.size()-1)); oldCirclesSubset++){
-                        ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
-                        // (-) <-> 0, (+) <-> 1
-                        if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
-                            // must be a merge
-                            // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
-                            bool circleOneStatus = ((oldCirclesSubset 
-                            & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
-                            bool circleTwoStatus = ((oldCirclesSubset 
-                            & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
+            if (!containsX){
+                for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << (oldCircles.size()-1)); oldCirclesSubset++){
+                    ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
+                    // (-) <-> 0, (+) <-> 1
+                    if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
+                        // must be a merge
+                        // (-) x (-) -> (-); (-) x (+) = (+) x (-) -> (+), (+) x (+) -> (-)
+                        bool circleOneStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
+                        bool circleTwoStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
 
-                            bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
-                            // rule based on Audoux's notation
+                        bool newCircleStatus = circleOneStatus ^ circleTwoStatus;
+                        // rule based on Audoux's notation
 
-                            ll newCircleIndex = circleStartingIndex[newResolution];
-                            // update index for the new merged circle
-                            if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
-                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                    if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
-                                        newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
-                                    }
+                        ll newCircleIndex = circleStartingIndex[newResolution];
+                        // update index for the new merged circle
+                        if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
+                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
+                                    newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
                                 }
                             }
-
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                         }
-                        else if (oldDiff.size() == 1){ // must be a split
-                            // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
-                            // based on Audoux's notation
 
-                            ll newCircleIndex1 = circleStartingIndex[newResolution];
-                            ll newCircleIndex2 = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size()-1ll; oldCirclesIndex++){
-                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                    if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
-                                        newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
-                                        newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
-                                    }
-                                }
-                            }
-
-                            // implementing (+) ->
-                            if (oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()])){ // (+) ->
-                                // newCircleIndex1: (-)(-), newCircleIndex2: (+)(+)
-                                newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                                newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
-
-                                differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                                differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
-                            }
-                            else{ // (-) ->
-                                // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
-                                newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
-                                newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
-
-                                differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
-                                differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
-                            }
-                        }
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                     }
-                }
-                else { // contains X in the merge/split
-                    for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << (oldCircles.size()-1)); oldCirclesSubset++){
-                        ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
-                        if (oldDiff.size() == 2){ // must be a merge
-                            ll newCircleIndex = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
-                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                                    if (!oldDiff.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
-                                        newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
-                                    }
-                                }
-                            }
-                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
-                        }
-                        else if (oldDiff.size() == 1){ // must be a split
-                            ll newCircleIndex1 = circleStartingIndex[newResolution];
-                            ll newCircleIndex2 = circleStartingIndex[newResolution];
-                            for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
-                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                    else if (oldDiff.size() == 1){ // must be a split
+                        // (+) -> (+)(+) + (-)(-); (-) -> (-)(+) + (+)(-)
+                        // based on Audoux's notation
+
+                        ll newCircleIndex1 = circleStartingIndex[newResolution];
+                        ll newCircleIndex2 = circleStartingIndex[newResolution];
+                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size()-1ll; oldCirclesIndex++){
+                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
                                     newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
                                     newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
                                 }
                             }
+                        }
+
+                        // implementing (+) ->
+                        if (oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()])){ // (+) ->
+                            // newCircleIndex1: (-)(-), newCircleIndex2: (+)(+)
+                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
                             newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
+
                             differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
                             differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                         }
+                        else{ // (-) ->
+                            // newCircleIndex1: (+)(-), newCircleIndex2: (-)(+)
+                            newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                            newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
+
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
+                        }
+                    }
+                }
+            }
+            else { // contains X in the merge/split
+                for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << (oldCircles.size()-1)); oldCirclesSubset++){
+                    ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
+                    if (oldDiff.size() == 2){ // must be a merge
+                        ll newCircleIndex = circleStartingIndex[newResolution];
+                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
+                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                if (!oldDiff.count(resolutionCirclesVector[resolution][oldCirclesIndex + 1])){
+                                    newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
+                                }
+                            }
+                        }
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                    }
+                    else if (oldDiff.size() == 1){ // must be a split
+                        ll newCircleIndex1 = circleStartingIndex[newResolution];
+                        ll newCircleIndex2 = circleStartingIndex[newResolution];
+                        for (ll oldCirclesIndex = 0; oldCirclesIndex < oldCircles.size() - 1ll; oldCirclesIndex++){
+                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                newCircleIndex1 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
+                                newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex + 1]]);
+                            }
+                        }
+                        newCircleIndex2 += (1ll << resolutionCircleIndices[newResolution][*(++newDiff.begin())]);
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex1] = 1;
+                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex2] = 1;
                     }
                 }
             }
@@ -424,25 +451,6 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
     }
 
     return differentialMap;
-
-    // output
-    // for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-    //     for (ll columnIndex = 0; columnIndex < differentialMap[i][0].size(); columnIndex++){
-    //         for (ll rowIndex = 0; rowIndex < differentialMap[i].size(); rowIndex++){
-    //             cout << differentialMap[i][rowIndex][columnIndex] << ' ';
-    //         }
-    //         cout << endl;
-    //     }
-    //     cout << endl;
-    // }
-}
-
-std::vector<std::vector<bool>> takeTranspose(std::vector<std::vector<bool>> initial){
-    std::vector<std::vector<bool>> ret(initial[0].size(), std::vector<bool>(initial.size()));
-    for (ll i = 0; i < initial.size(); i++)
-        for (ll j = 0; j < initial[0].size(); j++)
-            ret[j][i] = initial[i][j];
-    return ret;
 }
 
 std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool reducedHomology){
@@ -463,7 +471,7 @@ std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool reducedHomo
     
     std::vector<std::vector<std::vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
-    else maps = differentialMaps(D);
+    else maps = regularDifferentialMaps(D);
 
     return maps;
 }
@@ -471,242 +479,213 @@ std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool reducedHomo
 
 // annular stuff below
 
-void insertVector(std::vector<ll> &basis, ll mask) {
-	for (ll i = 0; i < basis.size(); i++) {
-		if (!(mask & (1ll << i))) continue;
-		if (!basis[i]) {
-			basis[i] = mask;
-		}
-		mask ^= basis[i];
-	}
-}
-
-bool isLinearlyIndependent(const std::vector<ll> &basis, ll mask){
-    for (ll i = 0; i < basis.size(); i++){
-        if (!(mask & (1ll << i))) continue;
-        if (!basis[i]) return 1;
-        mask ^= basis[i];
-    }
-    return 0;
-}
-
-bool containsPuncture(const std::set<int> &circle, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
-    ll mask = 0;
-    for (auto x : circle){
-        mask += (1ll << (x-1));
-    }
-    assert(!isLinearlyIndependent(basis2, mask));
-    return isLinearlyIndependent(basis1, mask);
-}
-
-std::vector<bool> mapVVtoA(bool first, bool second){
-    if (first ^ second) return {0, 1}; // means assign V-
-    return {};
-}
-
-bool mapVAtoV(bool first, bool second){ 
-    return first;
-}
-
-std::vector<bool> annularMerge(const std::set<int> &circle1, bool circle1Status, const std::set<int> &circle2, bool circle2Status, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
-    bool circle1HasPuncture = containsPuncture(circle1, basis1, basis2);
-    bool circle2HasPuncture = containsPuncture(circle2, basis1, basis2);
-    if (circle1HasPuncture && circle2HasPuncture){
-        return mapVVtoA(circle1Status, circle2Status);
-    }
-    if (!circle1HasPuncture && !circle2HasPuncture){ // regular Audoux map
-        return {circle1Status != circle2Status};
-    }
-    if (circle2HasPuncture) std::swap(circle1Status, circle2Status);
-    return {mapVAtoV(circle1Status, circle2Status)};
-}
-
-std::vector<std::pair<bool, bool>> mapAtoVV(bool first){ // returns a sum
-    if (first) return {{1, 0}, {0, 1}};
-    return {};
-}
-
-std::vector<std::pair<bool, bool>> mapVtoVA(bool first){
-    return {{first, 0}, {first, 1}};
-}
-
-std::vector<std::pair<bool, bool>> annularSplit(const std::set<int> &circle, bool circleStatus, const std::set<int> &res1, const std::set<int> &res2, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
-    bool origHasPuncture = containsPuncture(circle, basis1, basis2);
-    bool res1HasPuncture = containsPuncture(res1, basis1, basis2);
-    bool res2HasPuncture = containsPuncture(res2, basis1, basis2);
-    if (!origHasPuncture && !res1HasPuncture && !res2HasPuncture){ // regular split
-        if (circleStatus){ // (+) -> (-)(-) + (+)(+)
-            return {{0, 0}, {1, 1}};
-        }
-        else{ // (-) -> (-)(+) + (+)(-)
-            return {{0, 1}, {1, 0}};
-        }
-    } 
-    if (origHasPuncture){
-        if (res1HasPuncture){
-            return mapVtoVA(circleStatus);
-        }
-        else if (res2HasPuncture){
-            auto ret = mapVtoVA(circleStatus);
-            std::swap(ret[0].first, ret[0].second);
-            std::swap(ret[1].first, ret[1].second);
-            return ret;
-        }
-        assert(0); // split configuration invalid
-    }
-    else{
-        if (res1HasPuncture && res2HasPuncture){
-            return {{1, 0}, {0, 1}};
-        }
-        assert(0); // split configuration invalid
-    }
-    assert(0); // split configuration invalid
-    return {};
-}
-
-std::vector<std::vector<std::vector<bool>>> annularDifferentialMap(PD D, std::vector<std::vector<int>> faces){
-    // freopen("input.txt", "r", stdin);
-    // int n; std::cin >> n;
-    // assume edges are always 1-indexed
-    // PD D = readPlanarDiagram(n);
-    int n = D.size();
-    // int f; std::cin >> f;
-
-    std::vector<ll> basis1(63), basis2(63);
-    ll specialMask;
-    for (int i = 0; i < faces.size(); i++){
+namespace annular{
+    bool containsPuncture(const std::set<int> &circle, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
         ll mask = 0;
-        for (int j = 0; j < faces[i].size(); j++){
-            ll x = faces[i][j];
+        for (auto x : circle){
             mask += (1ll << (x-1));
         }
-        if (!i) specialMask = mask;
-        else insertVector(basis1, mask);
-    }
-    basis2 = basis1;
-    insertVector(basis2, specialMask);
-
-    std::vector<std::set<std::set<int>>> resolutionCube(1ll << n);
-    for (ll i = 0; i < (1ll << n); i++){
-        resolutionCube[i] = resolutionCircles(D, i);
-        // test puncture detection
-        // for (auto circle : resolutionCube[i]){
-        //     if (containsPuncture(circle, basis1, basis2)){
-        //         for (auto x : circle) cerr << x << ' ';
-        //         cerr << endl;
-        //     }
-        // }
-    }
-    
-    std::vector<ll> ordering((1ll << n));
-    std::vector<ll> circleStartingIndex((1ll << n));
-
-    std::vector<ll> bitCount(n+1, 0);
-    std::vector<ll> basisStartCount(n+1, 0);
-    for (ll i = 0; i < (1ll << n); i++){
-        ordering[i] = bitCount[__builtin_popcountll(i)]++;
-        circleStartingIndex[i] = basisStartCount[__builtin_popcountll(i)];
-        basisStartCount[__builtin_popcountll(i)] += (1ll << resolutionCube[i].size());
+        assert(!isLinearlyIndependent(basis2, mask));
+        return isLinearlyIndependent(basis1, mask);
     }
 
-
-    std::vector<std::vector<std::vector<bool>>> differentialMap(n);
-    for (int i = 0; i < n; i++){
-        differentialMap[i] = std::vector<std::vector<bool>>(basisStartCount[i], std::vector<bool>(basisStartCount[i+1]));
+    std::vector<bool> mapVVtoA(bool first, bool second){
+        if (first != second) return {0, 1}; // means assign V-
+        return {};
     }
 
-    std::vector<std::map<std::set<int>, ll>> resolutionCircleIndices(1ll << n);
-    std::vector<std::vector<std::set<int>>> resolutionCirclesVector(1ll << n);
+    bool mapVAtoV(bool first, bool second){ 
+        return first;
+    }
 
-    for (ll resolution = 0; resolution < (1ll << n); resolution++){
-        ll count = 0;
-        for (auto x : resolutionCube[resolution]){
-            resolutionCircleIndices[resolution][x] = count++;
-            resolutionCirclesVector[resolution].push_back(x);
+    std::vector<bool> annularMerge(const std::set<int> &circle1, bool circle1Status, const std::set<int> &circle2, bool circle2Status, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
+        bool circle1HasPuncture = containsPuncture(circle1, basis1, basis2);
+        bool circle2HasPuncture = containsPuncture(circle2, basis1, basis2);
+        if (circle1HasPuncture && circle2HasPuncture){
+            return mapVVtoA(circle1Status, circle2Status);
         }
+        if (!circle1HasPuncture && !circle2HasPuncture){ // regular Audoux map
+            return {circle1Status != circle2Status};
+        }
+        if (circle2HasPuncture) std::swap(circle1Status, circle2Status);
+        return {mapVAtoV(circle1Status, circle2Status)};
     }
 
+    std::vector<std::pair<bool, bool>> mapAtoVV(bool first){ // returns a sum
+        if (first) return {{1, 0}, {0, 1}};
+        return {};
+    }
 
-    for (ll resolution = 0; resolution < (1ll << n); resolution++){
-        for (int j = 0; j < n; j++){
-            if ((resolution & (1ll << j)) != 0) continue; // jth bit already set
-            // jth bit not yet set
-            ll newResolution = resolution | (1ll << j);
-            std::set<std::set<int>> oldCircles = resolutionCube[resolution];
-            std::set<std::set<int>> newCircles = resolutionCube[newResolution];
+    std::vector<std::pair<bool, bool>> mapVtoVA(bool first){
+        return {{first, 0}, {first, 1}};
+    }
 
-            std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
-            std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
+    std::vector<std::pair<bool, bool>> annularSplit(const std::set<int> &circle, bool circleStatus, const std::set<int> &res1, const std::set<int> &res2, const std::vector<ll> &basis1, const std::vector<ll> &basis2){
+        bool origHasPuncture = containsPuncture(circle, basis1, basis2);
+        bool res1HasPuncture = containsPuncture(res1, basis1, basis2);
+        bool res2HasPuncture = containsPuncture(res2, basis1, basis2);
+        if (!origHasPuncture && !res1HasPuncture && !res2HasPuncture){ // regular split
+            if (circleStatus){ // (+) -> (-)(-) + (+)(+)
+                return {{0, 0}, {1, 1}};
+            }
+            else{ // (-) -> (-)(+) + (+)(-)
+                return {{0, 1}, {1, 0}};
+            }
+        } 
+        if (origHasPuncture){
+            if (res1HasPuncture){
+                return mapVtoVA(circleStatus);
+            }
+            else if (res2HasPuncture){
+                auto ret = mapVtoVA(circleStatus);
+                std::swap(ret[0].first, ret[0].second);
+                std::swap(ret[1].first, ret[1].second);
+                return ret;
+            }
+            assert(0); // split configuration invalid
+        }
+        else{
+            if (res1HasPuncture && res2HasPuncture){
+                return {{1, 0}, {0, 1}};
+            }
+            assert(0); // split configuration invalid
+        }
+        assert(0); // split configuration invalid
+        return {};
+    }
 
-            for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
-                ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
-                // (-) <-> 0, (+) <-> 1
-                if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
-                    // must be a merge
+    std::vector<std::vector<std::vector<bool>>> differentialMap(PD D, std::vector<std::vector<int>> faces){
+        // freopen("input.txt", "r", stdin);
+        // int n; std::cin >> n;
+        // assume edges are always 1-indexed
+        // PD D = readPlanarDiagram(n);
+        int n = D.size();
+        // int f; std::cin >> f;
 
-                    bool circleOneStatus = ((oldCirclesSubset 
-                    & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
-                    bool circleTwoStatus = ((oldCirclesSubset 
-                    & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
+        std::vector<ll> basis1(63), basis2(63);
+        ll specialMask;
+        for (int i = 0; i < faces.size(); i++){
+            ll mask = 0;
+            for (int j = 0; j < faces[i].size(); j++){
+                ll x = faces[i][j];
+                mask += (1ll << (x-1));
+            }
+            if (!i) specialMask = mask;
+            else insertVector(basis1, mask);
+        }
+        basis2 = basis1;
+        insertVector(basis2, specialMask);
 
-                    std::vector<bool> newCircleStatuses = annularMerge(*oldDiff.begin(), circleOneStatus,
-                    *(++oldDiff.begin()), circleTwoStatus, basis1, basis2);
+        std::vector<std::set<std::set<int>>> resolutionCube(1ll << n);
+        for (ll i = 0; i < (1ll << n); i++){
+            resolutionCube[i] = resolutionCircles(D, i);
+            // test puncture detection
+            // for (auto circle : resolutionCube[i]){
+            //     if (containsPuncture(circle, basis1, basis2)){
+            //         for (auto x : circle) cerr << x << ' ';
+            //         cerr << endl;
+            //     }
+            // }
+        }
+        
+        std::vector<ll> ordering((1ll << n));
+        std::vector<ll> circleStartingIndex((1ll << n));
 
-                    ll newCircleStartIndex = circleStartingIndex[newResolution];
-                    // update index for the new merged circle
-                    for (bool newCircleStatus : newCircleStatuses){
-                        ll newCircleIndex = newCircleStartIndex;
-                        if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+        std::vector<ll> bitCount(n+1, 0);
+        std::vector<ll> basisStartCount(n+1, 0);
+        for (ll i = 0; i < (1ll << n); i++){
+            ordering[i] = bitCount[__builtin_popcountll(i)]++;
+            circleStartingIndex[i] = basisStartCount[__builtin_popcountll(i)];
+            basisStartCount[__builtin_popcountll(i)] += (1ll << resolutionCube[i].size());
+        }
+
+
+        std::vector<std::vector<std::vector<bool>>> differentialMap(n);
+        for (int i = 0; i < n; i++){
+            differentialMap[i] = std::vector<std::vector<bool>>(basisStartCount[i], std::vector<bool>(basisStartCount[i+1]));
+        }
+
+        std::vector<std::map<std::set<int>, ll>> resolutionCircleIndices(1ll << n);
+        std::vector<std::vector<std::set<int>>> resolutionCirclesVector(1ll << n);
+
+        for (ll resolution = 0; resolution < (1ll << n); resolution++){
+            ll count = 0;
+            for (auto x : resolutionCube[resolution]){
+                resolutionCircleIndices[resolution][x] = count++;
+                resolutionCirclesVector[resolution].push_back(x);
+            }
+        }
+
+
+        for (ll resolution = 0; resolution < (1ll << n); resolution++){
+            for (int j = 0; j < n; j++){
+                if ((resolution & (1ll << j)) != 0) continue; // jth bit already set
+                // jth bit not yet set
+                ll newResolution = resolution | (1ll << j);
+                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
+
+                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
+
+                for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
+                    ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
+                    // (-) <-> 0, (+) <-> 1
+                    if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
+                        // must be a merge
+
+                        bool circleOneStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
+                        bool circleTwoStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
+
+                        std::vector<bool> newCircleStatuses = annularMerge(*oldDiff.begin(), circleOneStatus,
+                        *(++oldDiff.begin()), circleTwoStatus, basis1, basis2);
+
+                        ll newCircleStartIndex = circleStartingIndex[newResolution];
+                        // update index for the new merged circle
+                        for (bool newCircleStatus : newCircleStatuses){
+                            ll newCircleIndex = newCircleStartIndex;
+                            if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                            for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                    if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                        newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                    }
+                                }
+                            }
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                        }
+                    }
+                    else if (oldDiff.size() == 1){ // must be a split
+                        ll newCircleStartIndex = circleStartingIndex[newResolution];
                         for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
                             if (oldCirclesSubset & (1ll << oldCirclesIndex)){
                                 if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
-                                    newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                    newCircleStartIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
                                 }
                             }
                         }
-                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
-                    }
-                }
-                else if (oldDiff.size() == 1){ // must be a split
-                    ll newCircleStartIndex = circleStartingIndex[newResolution];
-                    for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
-                        if (oldCirclesSubset & (1ll << oldCirclesIndex)){
-                            if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
-                                newCircleStartIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
-                            }
+
+                        bool oldCircleStatus = oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()]);
+                        std::vector<std::pair<bool, bool>> newCircleStatuses = annularSplit(*oldDiff.begin(), oldCircleStatus,
+                        *newDiff.begin(), *(++newDiff.begin()), basis1, basis2);
+
+                        int newCircle1Index = resolutionCircleIndices[newResolution][*newDiff.begin()];
+                        int newCircle2Index = resolutionCircleIndices[newResolution][*(++newDiff.begin())];
+                        for (std::pair<bool, bool> newCircleStatus : newCircleStatuses){
+                            ll newCircleIndex = newCircleStartIndex;
+                            if (newCircleStatus.first) newCircleIndex += (1ll << newCircle1Index);
+                            if (newCircleStatus.second) newCircleIndex += (1ll << newCircle2Index);
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                         }
-                    }
-
-                    bool oldCircleStatus = oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()]);
-                    std::vector<std::pair<bool, bool>> newCircleStatuses = annularSplit(*oldDiff.begin(), oldCircleStatus,
-                    *newDiff.begin(), *(++newDiff.begin()), basis1, basis2);
-
-                    int newCircle1Index = resolutionCircleIndices[newResolution][*newDiff.begin()];
-                    int newCircle2Index = resolutionCircleIndices[newResolution][*(++newDiff.begin())];
-                    for (std::pair<bool, bool> newCircleStatus : newCircleStatuses){
-                        ll newCircleIndex = newCircleStartIndex;
-                        if (newCircleStatus.first) newCircleIndex += (1ll << newCircle1Index);
-                        if (newCircleStatus.second) newCircleIndex += (1ll << newCircle2Index);
-                        differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
                     }
                 }
             }
         }
+
+        return differentialMap;
     }
-
-    return differentialMap;
-
-    // output
-    // for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
-    //     for (ll columnIndex = 0; columnIndex < differentialMap[i][0].size(); columnIndex++){
-    //         for (ll rowIndex = 0; rowIndex < differentialMap[i].size(); rowIndex++){
-    //             std::cout << differentialMap[i][rowIndex][columnIndex] << ' ';
-    //         }
-    //         std::cout << std::endl;
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // return 0;
 }
 
 #endif
