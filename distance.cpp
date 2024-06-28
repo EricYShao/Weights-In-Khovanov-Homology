@@ -14,7 +14,7 @@ using namespace std;
 #define all(a) (a).begin(), (a).end()
 #define pb push_back
 
-const int N = 120;
+const int N = 310;
 
 using ll = long long;
 using vi = vector<int>;
@@ -27,13 +27,20 @@ using vn = vector<num>;
 
 const ll INF = 1e18;
 
-inline num nextPerm(num v){
+num nextPerm(num v){
     num ret = v;
+    ll count = 0;
     forn(i, N-1){
-        if (v[i] && !v[i+1]){
-            ret[i] = 0;
-            ret[i+1] = 1;
-            return ret;
+        if (v[i]){
+            if (!v[i+1]){
+                ret[i] = 0;
+                ret[i+1] = 1;
+                return ret;
+            }
+            else{
+                ret[i] = 0;
+                ret[count++] = 1;
+            }
         }
     }
     ret = num(0);
@@ -56,7 +63,7 @@ void insertVector(ll &rank, vn &basis, num mask) {
 	}
 }
 
-bool isLinearlyIndependent(vn &basis, num mask){
+bool isLinearlyIndependent(const vn &basis, num mask){
     for (ll i = 0; i < basis.size(); i++){
         if (!(mask[i])) continue;
         if (basis[i] == num(0)) return 1;
@@ -71,16 +78,18 @@ int minDist(vn oldMap, vn newMap){
     rank1 = rank2 = 0;
     for (auto x : oldMap) insertVector(rank1, basis1, x);
     for (auto x : newMap) insertVector(rank2, basis2, x);
+    // cerr << "Dimension: " << newMap.size() << ", Rank: " << rank2 << endl;
     if (rank1 == newMap.size() - rank2){
         return 0;
     }
+    // cerr << endl << "Homology dimension: " << newMap.size() - rank2 - rank1 << endl;
     vn vectors = newMap;
     ll n = vectors.size();
 
     for (int k = 1; k <= n; ++k) {
         num w(0);
         forn(i, k) w[i] = 1;
-        for (; w != num(0); w = nextPerm(w)) {
+        for (; !w[n]; w = nextPerm(w)) {
             num mask = 0;
             bool good = 0;
             forn(j, n){
@@ -91,7 +100,16 @@ int minDist(vn oldMap, vn newMap){
             }
             if (!good) break;
             if (mask == num(0)){
-                if (isLinearlyIndependent(basis1, w)){
+                // cerr << " good " << k << ' ';
+                if (1 || isLinearlyIndependent(basis1, w)){
+                    // if (k == 15){
+                    //     forn(i, N) if (mask[i]) assert(0);
+                    //     cerr << endl;
+                    //     forn(i, N){
+                    //         if (w[i]) cerr << i << ' ';
+                    //     }
+                    //     cerr << endl;
+                    // }
                     return k;
                 }
             }
@@ -117,7 +135,7 @@ signed main()
     // freopen("output.txt", "r", stdin);
     // int numCases; cin >> numCases;
     ll n = maps.size();
-    vector<vn> matrices(n+1, vn(0));
+    vector<vn> matrices(n+2, vn(0));
     forn(i, n){
         matrices[i+1] = vn(maps[i].size(), num(0));
         forn(j, maps[i].size()){
@@ -125,18 +143,26 @@ signed main()
                 matrices[i+1][j][k] = maps[i][j][k];
         }
     }
-    forn(i, n) cout << minDist(matrices[i], matrices[i+1]) << ' ';
-    cout << 1 << endl << "1 ";
+    matrices[n+1] = vn(maps[n-1][0].size());
+    forn(i, n+1) cout << minDist(matrices[i], matrices[i+1]) << ' ';
+    cout << endl;
+
     matrices.clear();
-    matrices = vector<vn>(n+1, vn(0));
+    matrices = vector<vn>(n+2, vn(0));
+
     forn(i, n){
-        matrices[i] = vn(maps[i][0].size(), num(0));
+        maps[i] = takeTranspose(maps[i]);
+    }
+
+    matrices[0] = vn(maps[0][0].size());
+    forn(i, n){
+        matrices[i+1] = vn(maps[i].size(), num(0));
         forn(j, maps[i].size()){
             forn(k, maps[i][j].size())
-                matrices[i][k][j] = maps[i][j][k];
+                matrices[i+1][j][k] = maps[i][j][k];
         }
     }
-    forn(i, n) cout << minDist(matrices[i+1], matrices[i]) << ' ';
+    forn(i, n+1) cout << minDist(matrices[i+1], matrices[i]) << ' ';
 
     return 0;
 }
