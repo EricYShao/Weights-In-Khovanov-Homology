@@ -1,4 +1,5 @@
 #include "differentialMaps.hpp"
+#include "matrices.hpp"
 #pragma GCC optimize("O2")
 
 using namespace std;
@@ -22,7 +23,7 @@ void outputAsIntegers(vector<vector<vector<bool>>> &maps){
     }
 }
 
-void outputMatrix(vector<vector<vector<bool>>> &maps){
+void outputMatrix(vector<vector<vector<bool>>> &maps){ // outputs assuming vector of column vectors
     ll n = maps.size();
     for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
         for (ll columnIndex = 0; (ull)columnIndex < maps[i][0].size(); columnIndex++){

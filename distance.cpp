@@ -1,12 +1,19 @@
 // program to find distances using planar diagram notation directly from input.txt
 // should modify N to be the maximum matrix size + 10 to be safe
+// for annular, input format should be as follows in input.txt
+// line 1: contains two space-separated numbers n, f. n is the the number of crossings, f the number of faces
+// lines 2 to n+1: crossing information in planar diagram notation
+// line n+2 to n+f+1: the first number contains the number of mini-strands s that bound a face. On the same line, there are s more numbers, each denoting a mini-strand index
+// the program assumes that line n+2 describes the face with the puncture
 
 #include <iostream>
 #include <vector>
 #include <map>
 #include <cassert>
 #include <bitset>
+#pragma GCC optimize("O2")
 #include "differentialMaps.hpp"
+#include "matrices.hpp"
 
 using namespace std;
 
@@ -14,12 +21,14 @@ using namespace std;
 #define all(a) (a).begin(), (a).end()
 #define pb push_back
 
-const int N = 310;
+const int N = 400;
+const int timeLimit = 30; // seconds to finish calculation at one degree
 
 using ll = long long;
 using vi = vector<int>;
 using vll = vector<ll>;
 using pll = pair<ll, ll>;
+using ld = long double;
 using num = bitset<N>;
 using vn = vector<num>;
 
@@ -85,11 +94,16 @@ int minDist(vn oldMap, vn newMap){
     // cerr << endl << "Homology dimension: " << newMap.size() - rank2 - rank1 << endl;
     vn vectors = newMap;
     ll n = vectors.size();
+    ld tic = clock();
 
     for (int k = 1; k <= n; ++k) {
         num w(0);
         forn(i, k) w[i] = 1;
         for (; !w[n]; w = nextPerm(w)) {
+            ld tac = clock();
+            if ((tac - tic) / CLOCKS_PER_SEC > timeLimit){
+                return -k;
+            }
             num mask = 0;
             bool good = 0;
             forn(j, n){
@@ -100,16 +114,7 @@ int minDist(vn oldMap, vn newMap){
             }
             if (!good) break;
             if (mask == num(0)){
-                // cerr << " good " << k << ' ';
-                if (1 || isLinearlyIndependent(basis1, w)){
-                    // if (k == 15){
-                    //     forn(i, N) if (mask[i]) assert(0);
-                    //     cerr << endl;
-                    //     forn(i, N){
-                    //         if (w[i]) cerr << i << ' ';
-                    //     }
-                    //     cerr << endl;
-                    // }
+                if (isLinearlyIndependent(basis1, w)){
                     return k;
                 }
             }
@@ -120,20 +125,7 @@ int minDist(vn oldMap, vn newMap){
     return 0;
 }
 
-signed main()
-{
-
-    // cout << "This program finds the minimum distance. Please enter the number of basis elements for the image: " << endl;
-    // ll n; cin >> n;
-    // while (n >= 120){
-    //     cout << "Please enter a number less than 120" << endl;
-    //     cin >> n;
-    // }
-    // cout << "Input " << n << " integers, each representing a basis element in (Z/2Z)^" << n << ':' << endl;
-    vector<vector<vector<bool>>> maps = planarDiagramToMaps(1);
-
-    // freopen("output.txt", "r", stdin);
-    // int numCases; cin >> numCases;
+void getAllDistances(vector<vector<vector<bool>>> &maps){
     ll n = maps.size();
     vector<vn> matrices(n+2, vn(0));
     forn(i, n){
@@ -142,6 +134,14 @@ signed main()
             forn(k, maps[i][j].size())
                 matrices[i+1][j][k] = maps[i][j][k];
         }
+    }
+    ll maxMatrixSize = 0;
+    forn(i, n){
+        maxMatrixSize = max(maxMatrixSize, (ll) matrices[i+1].size());
+    }
+    if (maxMatrixSize > N){
+        cerr << "N should be at least " << maxMatrixSize + 5 << endl;
+        exit(1);
     }
     matrices[n+1] = vn(maps[n-1][0].size());
     forn(i, n+1) cout << minDist(matrices[i], matrices[i+1]) << ' ';
@@ -163,6 +163,12 @@ signed main()
         }
     }
     forn(i, n+1) cout << minDist(matrices[i+1], matrices[i]) << ' ';
+}
 
-    return 0;
+int main(){
+    bool takeAnnular = 1;
+    vector<vector<vector<bool>>> maps;
+    if (takeAnnular) maps = annular::planarDiagramToMaps();
+    else maps = getMaps(getPlanarDiagram(), 1); // always takes reduced homology
+    getAllDistances(maps);
 }

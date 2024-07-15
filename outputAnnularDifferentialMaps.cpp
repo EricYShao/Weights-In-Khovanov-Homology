@@ -35,7 +35,7 @@ int main(){
         }
     }
 
-    auto differentialMap = annularDifferentialMap(D, faces);
+    auto differentialMap = annular::differentialMap(D, faces);
 
     for (ll i = 0; i < n; i++){ // i = number of 1 resolutions
         for (ll columnIndex = 0; columnIndex < differentialMap[i][0].size(); columnIndex++){

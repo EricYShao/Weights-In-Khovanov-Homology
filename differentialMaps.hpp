@@ -36,14 +36,6 @@ template<typename T> std::set<T> setComplement(std::set<T> a, std::set<T> b){ //
     return a;
 }
 
-std::vector<std::vector<bool>> takeTranspose(std::vector<std::vector<bool>> initial){
-    std::vector<std::vector<bool>> ret(initial[0].size(), std::vector<bool>(initial.size()));
-    for (ll i = 0; i < initial.size(); i++)
-        for (ll j = 0; j < initial[0].size(); j++)
-            ret[j][i] = initial[i][j];
-    return ret;
-}
-
 void insertVector(std::vector<ll> &basis, ll mask) {
     for (ll i = 0; i < basis.size(); i++) {
         if (!(mask & (1ll << i))) continue;
@@ -453,7 +445,7 @@ std::vector<std::vector<std::vector<bool>>> reducedDifferentialMaps(PD D){
     return differentialMap;
 }
 
-std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool reducedHomology){
+PD getPlanarDiagram(){
     // reads planar diagram notation from input.txt and returns the differential maps
     freopen("input.txt", "r", stdin);
     std::vector<std::vector<int>> input;
@@ -468,7 +460,10 @@ std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool reducedHomo
     }
 
     PD D = createPlanarDiagram(input);
-    
+    return D;
+}
+
+std::vector<std::vector<std::vector<bool>>> getMaps(PD D, bool reducedHomology){
     std::vector<std::vector<std::vector<bool>>> maps;
     if (reducedHomology) maps = reducedDifferentialMaps(D);
     else maps = regularDifferentialMaps(D);
@@ -684,6 +679,26 @@ namespace annular{
             }
         }
 
+        return differentialMap;
+    }
+
+    std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(){
+        // reads planar diagram notation and faces from input.txt and returns the differential maps
+        freopen("input.txt", "r", stdin);
+        int n, f; std::cin >> n >> f;
+        // assume edges are always 1-indexed
+        PD D = readPlanarDiagram(n);
+        std::vector<std::vector<int>> faces(f);
+        for(int i=0; i<f; i++){
+            ll numEdges;
+            std::cin >> numEdges;
+            for(int j=0; j<numEdges; j++){
+                ll x; std::cin >> x;
+                faces[i].push_back(x);
+            }
+        }
+
+        auto differentialMap = annular::differentialMap(D, faces);
         return differentialMap;
     }
 }
