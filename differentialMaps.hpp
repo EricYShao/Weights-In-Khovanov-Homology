@@ -3,7 +3,10 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <algorithm>
 #ifndef DIFFERENTIAL_MAPS
+
+using namespace std;
 
 using ll = long long;
 using ull = unsigned long long;
@@ -480,7 +483,10 @@ namespace annular{
         for (auto x : circle){
             mask += (1ll << (x-1));
         }
-        assert(!isLinearlyIndependent(basis2, mask));
+        if (isLinearlyIndependent(basis2, mask)){
+            std::cerr << "Issue with faces and/or crossings. Please check input." << std::endl;
+            exit(1);
+        }
         return isLinearlyIndependent(basis1, mask);
     }
 
@@ -681,11 +687,173 @@ namespace annular{
 
         return differentialMap;
     }
+    std::vector<std::vector<std::vector<bool>>> differentialMapSubcomplex(PD D, std::vector<std::vector<int>> faces, int annularGrading){
+        int n = D.size();
+        // int f; std::cin >> f;
 
-    std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(){
+        std::vector<ll> basis1(63), basis2(63);
+        ll specialMask;
+        for (int i = 0; i < faces.size(); i++){
+            ll mask = 0;
+            for (int j = 0; j < faces[i].size(); j++){
+                ll x = faces[i][j];
+                mask += (1ll << (x-1));
+            }
+            if (!i) specialMask = mask;
+            else insertVector(basis1, mask);
+        }
+        basis2 = basis1;
+        insertVector(basis2, specialMask);
+
+        std::vector<std::set<std::set<int>>> resolutionCube(1ll << n);
+        for (ll i = 0; i < (1ll << n); i++){
+            resolutionCube[i] = resolutionCircles(D, i);
+            // test puncture detection
+            // for (auto circle : resolutionCube[i]){
+            //     if (containsPuncture(circle, basis1, basis2)){
+            //         for (auto x : circle) cerr << x << ' ';
+            //         cerr << endl;
+            //     }
+            // }
+        }
+        
+        std::vector<ll> ordering((1ll << n));
+        std::vector<ll> circleStartingIndex((1ll << n));
+
+        std::vector<ll> bitCount(n+1, 0);
+        std::vector<ll> basisStartCount(n+1, 0);
+        for (ll i = 0; i < (1ll << n); i++){
+            ordering[i] = bitCount[__builtin_popcountll(i)]++;
+            circleStartingIndex[i] = basisStartCount[__builtin_popcountll(i)];
+            basisStartCount[__builtin_popcountll(i)] += (1ll << resolutionCube[i].size());
+        }
+
+
+        std::vector<std::vector<std::vector<bool>>> differentialMap(n);
+        for (int i = 0; i < n; i++){
+            differentialMap[i] = std::vector<std::vector<bool>>(basisStartCount[i], std::vector<bool>(basisStartCount[i+1]));
+        }
+
+        std::vector<std::map<std::set<int>, ll>> resolutionCircleIndices(1ll << n);
+        std::vector<std::vector<std::set<int>>> resolutionCirclesVector(1ll << n);
+
+        for (ll resolution = 0; resolution < (1ll << n); resolution++){
+            ll count = 0;
+            for (auto x : resolutionCube[resolution]){
+                resolutionCircleIndices[resolution][x] = count++;
+                resolutionCirclesVector[resolution].push_back(x);
+            }
+        }
+
+        vector<vector<int>> elementsToKeep(n+1); // for each degree, stores the column vectors to keep
+        for (ll resolution = 0; resolution < (1ll << n); resolution++){
+            set<set<int>> circles = resolutionCube[resolution];
+            for (ll circlesSubset = 0; circlesSubset < (1ll << circles.size()); circlesSubset++){
+                ll index = circleStartingIndex[resolution] + circlesSubset;
+                ll count = 0;
+                ll circleIndex = 0;
+                for (auto circle : circles){
+                    if (containsPuncture(circle, basis1, basis2)){
+                        if ((1 << circleIndex) & circlesSubset) count++;
+                        else count--;
+                    }
+                    circleIndex++;
+                }
+                if (count == annularGrading) elementsToKeep[__builtin_popcountll(resolution)].push_back(index);
+            }
+        }
+
+        for (ll resolution = 0; resolution < (1ll << n); resolution++){
+            for (int j = 0; j < n; j++){
+                if ((resolution & (1ll << j)) != 0) continue; // jth bit already set
+                // jth bit not yet set
+                ll newResolution = resolution | (1ll << j);
+                std::set<std::set<int>> oldCircles = resolutionCube[resolution];
+                std::set<std::set<int>> newCircles = resolutionCube[newResolution];
+
+                std::set<std::set<int>> oldDiff = setComplement<std::set<int>>(oldCircles, newCircles);
+                std::set<std::set<int>> newDiff = setComplement<std::set<int>>(newCircles, oldCircles);
+
+                for (ll oldCirclesSubset = 0; oldCirclesSubset < (1ll << oldCircles.size()); oldCirclesSubset++){
+                    ll oldIndex = circleStartingIndex[resolution] + oldCirclesSubset;
+                    // (-) <-> 0, (+) <-> 1
+                    if (oldDiff.size() == 2){ // exactly 2 circles in the old resolution not in the new resolution
+                        // must be a merge
+
+                        bool circleOneStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(oldDiff.begin())])) != 0);
+                        bool circleTwoStatus = ((oldCirclesSubset 
+                        & (1ll << resolutionCircleIndices[resolution][*(++oldDiff.begin())])) != 0);
+
+                        std::vector<bool> newCircleStatuses = annularMerge(*oldDiff.begin(), circleOneStatus,
+                        *(++oldDiff.begin()), circleTwoStatus, basis1, basis2);
+
+                        ll newCircleStartIndex = circleStartingIndex[newResolution];
+                        // update index for the new merged circle
+                        for (bool newCircleStatus : newCircleStatuses){
+                            ll newCircleIndex = newCircleStartIndex;
+                            if (newCircleStatus) newCircleIndex += (1ll << resolutionCircleIndices[newResolution][*newDiff.begin()]);
+                            for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                                if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                    if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                        newCircleIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                    }
+                                }
+                            }
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                        }
+                    }
+                    else if (oldDiff.size() == 1){ // must be a split
+                        ll newCircleStartIndex = circleStartingIndex[newResolution];
+                        for (ll oldCirclesIndex = 0; (ull) oldCirclesIndex < oldCircles.size(); oldCirclesIndex++){
+                            if (oldCirclesSubset & (1ll << oldCirclesIndex)){
+                                if (newCircles.count(resolutionCirclesVector[resolution][oldCirclesIndex])){
+                                    newCircleStartIndex += (1ll << resolutionCircleIndices[newResolution][resolutionCirclesVector[resolution][oldCirclesIndex]]);
+                                }
+                            }
+                        }
+
+                        bool oldCircleStatus = oldCirclesSubset & (1ll << resolutionCircleIndices[resolution][*oldDiff.begin()]);
+                        std::vector<std::pair<bool, bool>> newCircleStatuses = annularSplit(*oldDiff.begin(), oldCircleStatus,
+                        *newDiff.begin(), *(++newDiff.begin()), basis1, basis2);
+
+                        int newCircle1Index = resolutionCircleIndices[newResolution][*newDiff.begin()];
+                        int newCircle2Index = resolutionCircleIndices[newResolution][*(++newDiff.begin())];
+                        for (std::pair<bool, bool> newCircleStatus : newCircleStatuses){
+                            ll newCircleIndex = newCircleStartIndex;
+                            if (newCircleStatus.first) newCircleIndex += (1ll << newCircle1Index);
+                            if (newCircleStatus.second) newCircleIndex += (1ll << newCircle2Index);
+                            differentialMap[__builtin_popcountll(resolution)][oldIndex][newCircleIndex] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int i=0; i<n; i++){
+            sort(elementsToKeep[i].begin(), elementsToKeep[i].end());
+        }
+
+        vector<vector<vector<bool>>> finalDiffMap(n);
+        for (int i=0; i<n; i++){
+            finalDiffMap[i] = vector<vector<bool>>(elementsToKeep[i].size(), vector<bool>(elementsToKeep[i+1].size()));
+        }
+        for (int i=0; i<n; i++){
+            for (int columnIndex=0; columnIndex<finalDiffMap[i].size(); columnIndex++){
+                for (int rowIndex=0; rowIndex<finalDiffMap[i][0].size(); rowIndex++){
+                    finalDiffMap[i][columnIndex][rowIndex] = differentialMap[i][elementsToKeep[i][columnIndex]][elementsToKeep[i+1][rowIndex]];
+                }
+            }
+        }
+
+        return finalDiffMap;
+    }
+
+    std::vector<std::vector<std::vector<bool>>> planarDiagramToMaps(bool restrictAnnularGrading){
         // reads planar diagram notation and faces from input.txt and returns the differential maps
         freopen("input.txt", "r", stdin);
-        int n, f; std::cin >> n >> f;
+        int n, f, r; std::cin >> n >> f;
+        if (restrictAnnularGrading) std::cin >> r;
         // assume edges are always 1-indexed
         PD D = readPlanarDiagram(n);
         std::vector<std::vector<int>> faces(f);
@@ -697,9 +865,8 @@ namespace annular{
                 faces[i].push_back(x);
             }
         }
-
-        auto differentialMap = annular::differentialMap(D, faces);
-        return differentialMap;
+        if (restrictAnnularGrading) return annular::differentialMapSubcomplex(D, faces, r);
+        return annular::differentialMap(D, faces);
     }
 }
 
