@@ -1,3 +1,5 @@
-
-*.exe
-*.txt
+*
+!*.cpp
+!*.hpp
+distance
+.vscode/*
